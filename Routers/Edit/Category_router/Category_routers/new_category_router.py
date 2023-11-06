@@ -1,0 +1,81 @@
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.methods import DeleteMessage, EditMessageReplyMarkup
+from aiogram.types import CallbackQuery, Message
+from peewee import IntegrityError
+
+from Database.create_database import ExpenseCategory
+from Keyboards.Edit.category import NewCategoryCallback, create_category_choose_kb
+from Middlewares.Edit.MessageLen import LimitCategoryLenMiddleware
+from create_bot import bot
+
+
+newCategoryRouter = Router()
+
+
+# Новые категории
+class NewCategory(StatesGroup):
+    query_message = State()
+    sent_message = State()
+    category_name = State()
+
+
+@newCategoryRouter.callback_query(NewCategoryCallback.filter(F.create == True))
+async def new_category_callback(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    await state.set_state(NewCategory.query_message)
+
+    await query.message.edit_reply_markup(reply_markup=create_category_choose_kb(category_create=False))
+
+    query_message_id = query.message.message_id
+    await state.set_state(NewCategory.query_message)
+    await state.update_data(query_message=query_message_id)
+
+    message = await query.message.answer(text=f"Напишите название новой категории:")
+    await state.set_state(NewCategory.sent_message)
+    await state.update_data(sent_message=message.message_id)
+
+    await state.set_state(NewCategory.category_name)
+
+
+@newCategoryRouter.callback_query(NewCategoryCallback.filter(F.create == False))
+async def cancel_new_category_callback(query: CallbackQuery, state: FSMContext):
+    chat_id = query.message.chat.id
+    sent_message = (await state.get_data())["sent_message"]
+
+    await query.answer()
+    await state.clear()
+
+    await query.message.edit_text(text="Выберите категория для изменения:",
+                                  reply_markup=create_category_choose_kb(category_create=True))
+    await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
+
+
+newCategoryRouter.message.middleware(LimitCategoryLenMiddleware())
+
+
+@newCategoryRouter.message(NewCategory.category_name, flags={"limit_category_len": True})
+async def add_new_category(message: Message, state: FSMContext):
+    await state.update_data(category_name=message.text)
+
+    chat_id = message.chat.id
+    message_id = message.message_id
+    category_name = message.text
+
+    data = await state.get_data()
+    sent_message_id = data['sent_message']
+    query_message_id = data['query_message']
+
+    await state.clear()
+
+    try:
+        ExpenseCategory.add_category(category_name)
+    except IntegrityError:
+        await message.answer(text=f"Категория с именем '{category_name}' уже существует в базе данных.")
+
+    await bot(EditMessageReplyMarkup(chat_id=chat_id,
+                                     message_id=query_message_id,
+                                     reply_markup=create_category_choose_kb()))
+    await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
+    await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message_id))
