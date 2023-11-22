@@ -1,23 +1,33 @@
-import logging
-from datetime import datetime
-import re
+import time
 
 from aiogram import Router, F
-from aiogram.filters import Command
+from aiogram.filters import Command, Filter
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from Keyboards.Expense.category import create_category_button, add_expense_kb, DateChooseCallback
+from Keyboards.Expense.category import TodayCallback, create_today_kb
 
 expensesRouter = Router()
 
 
+class CheckDate(Filter):
+    def __init__(self, date: str) -> None:
+        self.date = date
+
+    async def __call__(self, message: Message) -> bool:
+        self.date = message.text
+        try:
+            valid_date = time.strptime(self.date, '%m/%d/%Y')
+            print(valid_date)
+        except ValueError:
+            return False
+
+        return True
+
+
 class Expense(StatesGroup):
-    query_message = State()
     date = State()
-    set_date = State()
-    get_date = State()
     category = State()
     type = State()
     amount = State()
@@ -27,32 +37,34 @@ class Expense(StatesGroup):
 @expensesRouter.message(Command("expense"))
 @expensesRouter.message(F.text.casefold() == "расход")
 async def start_messaging(message: Message, state: FSMContext) -> None:
-    await state.set_state(Expense.current_date)
-
-    today = datetime.today()
-    formatted_date = today.strftime('%d.%m.%y')
-
-    await state.update_data(date=formatted_date)
-
-    await message.answer(text="Добавьте параметры расхода",
-                         reply_markup=add_expense_kb(formatted_date))
+    await message.answer(text="Выберете дату расхода:",
+                         reply_markup=create_today_kb())
+    await state.set_state(Expense.date)
 
 
-@expensesRouter.callback_query(DateChooseCallback.filter())
-async def change_date(query: CallbackQuery, state: FSMContext):
-    await query.answer()
+@expensesRouter.callback_query(Expense.date, TodayCallback.filter())
+async def change_date(query: CallbackQuery, callback_data: TodayCallback, state: FSMContext):
+    await state.set_state(Expense.date)
+    date = callback_data.today
+    await query.answer(f"Выбрана дата:{date}")
 
-    await query.message.answer(text='Напишите дату в формате "дд.мм.гг":')
-    await state.set_state(Expense.get_date)
+    await state.update_data(date=date)
+
+    await state.set_state(Expense.category)
 
 
-@expensesRouter.message(Expense.get_date, re.match(r'\d{2}.\d{2}.\d{2}', F.text) is None)
+@expensesRouter.message(Expense.date, CheckDate(F.text))
 async def invalid_date_format(message: Message, state: FSMContext):
+    print("В хэндлере")
     await message.answer(text="Введённая дата не того формата, повторите:")
-    await state.set_state(Expense.get_date)
+    await state.set_state(Expense.date)
 
 
-@expensesRouter.message(Expense.get_date)
-async def get_date(message: Message, state: FSMContext):
+@expensesRouter.message(Expense.date)
+async def set_date_text(message: Message, state: FSMContext):
     date = message.text
     await state.update_data(date=date)
+
+    await message.answer(text="Выберите категорию:")
+
+    await state.set_state(Expense.category)
