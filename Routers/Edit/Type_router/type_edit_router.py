@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 
 from Database.create_database import ExpenseCategory
 from Keyboards.Edit.category import create_category_choose_kb
-from Keyboards.Edit.type import BackToCategoriesCallback, BackToTypesCallback, ChooseTypeEditCallback, create_edit_type_kb, \
+from Keyboards.Edit.type import BackToCategoriesEditCallback, BackToTypesCallback, ChooseTypeEditCallback, create_edit_type_kb, \
     create_type_choose_kb
 from .Type_routers import deleteTypeRouter, renameTypeRouter, newTypeRouter
 
@@ -47,7 +47,7 @@ typeEditRouter.include_router(deleteTypeRouter)
 typeEditRouter.include_router(newTypeRouter)
 
 
-@typeEditRouter.callback_query(BackToCategoriesCallback.filter(F.back == True), flags={"delete_sent_message": True})
+@typeEditRouter.callback_query(BackToCategoriesEditCallback.filter(F.back == True), flags={"delete_sent_message": True})
 async def back_to_categories_callback(query: CallbackQuery):
     await query.answer()
 
