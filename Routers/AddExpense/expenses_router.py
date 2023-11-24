@@ -60,7 +60,8 @@ class CheckAmount(Filter):
         if ',' in self.amount:
             try:
                 # Проверка, что число больше нуля
-                return float(self.amount.replace(',', '.')) > 0.0
+                print(float(self.amount.replace(',', '.')))
+                return not (float(self.amount.replace(',', '.')) > 0.0)
             except ValueError:
                 return True
         elif '.' in self.amount:
@@ -180,7 +181,7 @@ async def incorrect_amount(message: Message, state: FSMContext):
 
 @expensesRouter.message(Expense.amount)
 async def set_amount(message: Message, state: FSMContext):
-    amount = float(message.text)
+    amount = float(message.text.replace(',', '.'))
     await state.update_data(amount=amount)
 
     await message.answer(text="Введите комментарий")

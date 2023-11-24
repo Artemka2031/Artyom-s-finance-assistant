@@ -4,9 +4,9 @@ from aiogram.types import Message
 
 from Keyboards.Edit.category import create_category_choose_kb
 
-from .Category_router import categoryEditRouter
+from .CategoryRouter import categoryEditRouter
 from Middlewares.Edit.ClearStateMiddleware import ClearStateMiddleware
-from .Type_router import typeEditRouter
+from .TypeRouter import typeEditRouter
 
 editExpenseCategoriesRouter = Router()
 

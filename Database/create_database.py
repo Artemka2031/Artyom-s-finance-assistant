@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta, datetime
 
 from peewee import Model, CharField, DateField, ForeignKeyField, SqliteDatabase, IntegrityError
 from Path import dbPath
@@ -356,6 +357,122 @@ class Expense(Model):
             Expense.logger.warning(f"Ошибка: Расход с ID {expense_id} не найден.")
         except Exception as e:
             Expense.logger.error(f"Ошибка при удалении расхода: {e}")
+
+    @staticmethod
+    def get_expenses_today():
+        try:
+            # Получение текущей даты
+            today = datetime.now().date()
+
+            # Запрос на получение расходов за сегодня
+            expenses_today = Expense.select().where(Expense.date == today)
+
+            # Формирование словаря с расходами по категориям и типам
+            result_dict = {}
+            for expense in expenses_today:
+                category_id = expense.category.id
+                type_id = expense.type.id
+
+                # Создание вложенного словаря для типа, если его еще нет
+                if category_id not in result_dict:
+                    result_dict[category_id] = {}
+
+                if type_id not in result_dict[category_id]:
+                    result_dict[category_id][type_id] = []
+
+                # Добавление расхода в список
+                result_dict[category_id][type_id].append({
+                    "id": expense.id,
+                    "date": expense.date,
+                    "amount": expense.amount,
+                    "comment": expense.comment,
+                })
+
+            return result_dict
+
+        except Exception as e:
+            Expense.logger.error(f"Ошибка при получении расходов за сегодня: {e}")
+            return {}
+
+    @staticmethod
+    def get_expenses_last_week():
+        try:
+            # Получение текущей даты
+            today = datetime.now().date()
+
+            # Вычисление начала текущей недели (Понедельник)
+            start_of_week = today - timedelta(days=today.weekday())
+
+            # Запрос на получение расходов за последнюю неделю
+            expenses_last_week = Expense.select().where((Expense.date >= start_of_week) & (Expense.date <= today))
+
+            # Формирование словаря с расходами по категориям и типам
+            result_dict = {}
+            for expense in expenses_last_week:
+                category_id = expense.category.id
+                type_id = expense.type.id
+
+                # Создание вложенного словаря для типа, если его еще нет
+                if category_id not in result_dict:
+                    result_dict[category_id] = {}
+
+                if type_id not in result_dict[category_id]:
+                    result_dict[category_id][type_id] = []
+
+                # Добавление расхода в список
+                result_dict[category_id][type_id].append({
+                    "id": expense.id,
+                    "date": expense.date,
+                    "amount": expense.amount,
+                    "comment": expense.comment,
+                })
+
+            return result_dict
+
+        except Exception as e:
+            Expense.logger.error(f"Ошибка при получении расходов за последнюю неделю: {e}")
+            return {}
+
+    @staticmethod
+    def get_expenses_current_month():
+        try:
+            # Получение текущей даты
+            today = datetime.now().date()
+
+            # Получение первого дня текущего месяца
+            first_day_of_month = today.replace(day=1)
+
+            # Запрос на получение расходов за текущий месяц
+            expenses_current_month = Expense.select().where(
+                (Expense.date >= first_day_of_month) & (Expense.date <= today)
+            )
+
+            # Формирование словаря с расходами по категориям и типам
+            result_dict = {}
+            for expense in expenses_current_month:
+                category_id = expense.category.id
+                type_id = expense.type.id
+
+                # Создание вложенного словаря для типа, если его еще нет
+                if category_id not in result_dict:
+                    result_dict[category_id] = {}
+
+                if type_id not in result_dict[category_id]:
+                    result_dict[category_id][type_id] = []
+
+                # Добавление расхода в список
+                result_dict[category_id][type_id].append({
+                    "id": expense.id,
+                    "date": expense.date,
+                    "amount": expense.amount,
+                    "comment": expense.comment,
+                })
+
+            return result_dict
+
+        except Exception as e:
+            Expense.logger.error(f"Ошибка при получении расходов за текущий месяц: {e}")
+            return {}
 
     class Meta:
         database = db
