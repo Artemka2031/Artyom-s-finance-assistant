@@ -22,8 +22,8 @@ class RenameCategory(StatesGroup):
     new_category_name = State()
 
 
-@renameCategoryRouter.callback_query(RenameCategoryCallback.filter(),  flags={"delete_sent_message": True})
-async def rename_category_action(query: CallbackQuery, callback_data: RenameCategoryCallback,state: FSMContext):
+@renameCategoryRouter.callback_query(RenameCategoryCallback.filter(), flags={"delete_sent_message": True})
+async def rename_category_action(query: CallbackQuery, callback_data: RenameCategoryCallback, state: FSMContext):
     await query.answer()
 
     await state.set_state(RenameCategory.query_message)
@@ -57,6 +57,7 @@ async def cancel_rename_category(query: CallbackQuery, state: FSMContext):
 
     await query.message.edit_reply_markup(reply_markup=create_type_choose_kb(category_id))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
+
 
 renameCategoryRouter.message.middleware(LimitCategoryLenMiddleware())
 

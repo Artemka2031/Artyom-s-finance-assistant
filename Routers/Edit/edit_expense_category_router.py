@@ -18,6 +18,7 @@ async def start_messaging(message: Message) -> None:
     await message.answer(text="Выберите категорию для изменения",
                          reply_markup=create_category_choose_kb(category_create=True))
 
+
 editExpenseCategoriesRouter.callback_query.middleware(ClearStateMiddleware())
 
 editExpenseCategoriesRouter.include_router(categoryEditRouter)

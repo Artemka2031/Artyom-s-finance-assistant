@@ -251,7 +251,7 @@ class ExpenseType(Model):
             ExpenseType.logger.warning(f"Ошибка: Тип с ID {type_id} и категорией {category_id} не найден.")
         except IntegrityError:
             raise IntegrityError(
-                    f"Ошибка: Тип с названием '{new_name}' уже существует в категории '{expense_type.category.name}'.")
+                f"Ошибка: Тип с названием '{new_name}' уже существует в категории '{expense_type.category.name}'.")
         except Exception as e:
             ExpenseType.logger.error(f"Ошибка при изменении названия типа: {e}")
 
