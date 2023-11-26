@@ -4,7 +4,8 @@ from aiogram.types import CallbackQuery
 
 from Database.create_database import ExpenseCategory
 from Keyboards.Edit.category import create_category_choose_kb
-from Keyboards.Edit.type import BackToCategoriesEditCallback, BackToTypesCallback, ChooseTypeEditCallback, create_edit_type_kb, \
+from Keyboards.Edit.type import BackToCategoriesEditCallback, BackToTypesCallback, ChooseTypeEditCallback, \
+    create_edit_type_kb, \
     create_type_choose_kb
 from .Type_routers import deleteTypeRouter, renameTypeRouter, newTypeRouter
 
@@ -36,6 +37,7 @@ async def back_to_types_callback(query: CallbackQuery, callback_data: BackToType
 
     await query.message.edit_text(text=f'Выберите тип для изменения \nв категории: "{category_name}"',
                                   reply_markup=create_type_choose_kb(category_id=category_id, create=True))
+
 
 # Добавляем роутер по изменению имени типа
 typeEditRouter.include_router(renameTypeRouter)

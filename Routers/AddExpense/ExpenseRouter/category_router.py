@@ -41,6 +41,7 @@ async def set_category(query: CallbackQuery, callback_data: ChooseTypeCallback, 
     await state.update_data(category={"category_id": category_id, "category_name": category_name},
                             type={"type_id": type_id, "type_name": type_name})
     await query.message.edit_text(text=f'Выбран тип "{type_name}" в категории "{category_name}"')
-    await query.message.answer(text="Введите сумму расхода:")
+    amount_message = await query.message.answer(text="Введите сумму расхода:")
+    await state.update_data(amount_message_id=amount_message.message_id)
 
     await state.set_state(Expense.amount)

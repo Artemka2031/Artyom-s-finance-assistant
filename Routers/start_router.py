@@ -1,6 +1,6 @@
-from aiogram import Router, F
-from aiogram.types import Message
+from aiogram import Router
 from aiogram.filters import CommandStart
+from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
 startRouter = Router()

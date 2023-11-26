@@ -1,6 +1,6 @@
 from aiogram.filters.callback_data import CallbackData
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import inline_keyboard_button as ik
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from Database.create_database import ExpenseType, ExpenseCategory
 

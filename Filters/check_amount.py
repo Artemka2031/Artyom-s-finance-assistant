@@ -12,7 +12,6 @@ class CheckAmount(Filter):
         if ',' in self.amount:
             try:
                 # Проверка, что число больше нуля
-                print(float(self.amount.replace(',', '.')))
                 return not (float(self.amount.replace(',', '.')) > 0.0)
             except ValueError:
                 return True
@@ -20,9 +19,7 @@ class CheckAmount(Filter):
             return True  # Встречена точка, возвращаем True
         else:
             try:
-                print(float(self.amount))
                 # Проверка, что число больше нуля
                 return not (float(self.amount) > 0.0)
             except ValueError:
                 return True  # Встречены буквы или другие символы, возвращаем True
-

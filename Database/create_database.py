@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta, datetime
 
 from peewee import Model, CharField, DateField, ForeignKeyField, SqliteDatabase, IntegrityError
+
 from Path import dbPath
 
 # Создайте подключение к базе данных (SQLite в этом случае)
@@ -276,7 +277,7 @@ class ExpenseType(Model):
             # Удаление всех расходов, связанных с этим типом
             expenses = Expense.select().where(Expense.type == type_id)
             for expense in expenses:
-                Expense.delete_expense_by_id(expense.id)
+                Expense.delete_expense(expense.id)
 
             # Удаление типа
             ExpenseType.logger.info(
@@ -336,6 +337,8 @@ class Expense(Model):
                 f"В категорию '{category.name}' добавлен новый расход (ID: {new_expense.id}, Дата: {date}, "
                 f"Тип: {expense_type.name}, Сумма: {amount}, Комментарий: {comment})")
 
+            return new_expense
+
         except ExpenseCategory.DoesNotExist:
             Expense.logger.warning(f"Ошибка: Категория с ID {category_id} не найдена.")
         except ExpenseType.DoesNotExist:
@@ -346,7 +349,7 @@ class Expense(Model):
             Expense.logger.error(f"Ошибка при добавлении расхода: {e}")
 
     @staticmethod
-    def delete_expense_by_id(expense_id):
+    def delete_expense(expense_id):
         try:
             expense = Expense.get(Expense.id == expense_id)
             expense.delete_instance()
@@ -355,8 +358,10 @@ class Expense(Model):
                                 f"Сумма: {expense.amount}, Комментарий: {expense.comment})")
         except Expense.DoesNotExist:
             Expense.logger.warning(f"Ошибка: Расход с ID {expense_id} не найден.")
+            raise Expense.DoesNotExist(f"Ошибка: Расход с ID {expense_id} не найден.")
         except Exception as e:
             Expense.logger.error(f"Ошибка при удалении расхода: {e}")
+            raise Exception(f"Ошибка при удалении расхода: {e}")
 
     @staticmethod
     def get_expenses_today():

@@ -1,10 +1,9 @@
 from datetime import datetime
 
 from aiogram.filters.callback_data import CallbackData
-from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.create_database import ExpenseCategory, ExpenseType
+from Database.create_database import ExpenseCategory
 
 
 class TodayCallback(CallbackData, prefix="TDC"):

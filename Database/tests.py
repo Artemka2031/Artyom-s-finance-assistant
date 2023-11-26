@@ -1,5 +1,7 @@
 import unittest
+
 from peewee import SqliteDatabase
+
 from create_database import ExpenseCategory, ExpenseType, Expense
 
 test_db = SqliteDatabase(':memory:')
@@ -135,6 +137,7 @@ class TestExpenseMethods(unittest.TestCase):
 
         with self.assertRaises(ExpenseType.DoesNotExist):
             Expense.add_expense(date, category_id, 1, amount, comment)
+
 
 if __name__ == '__main__':
     unittest.main()

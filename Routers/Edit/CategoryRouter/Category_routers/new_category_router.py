@@ -10,7 +10,6 @@ from Keyboards.Edit.category import NewCategoryCallback, create_category_choose_
 from Middlewares.Edit.MessageLen import LimitCategoryLenMiddleware
 from create_bot import bot
 
-
 newCategoryRouter = Router()
 
 

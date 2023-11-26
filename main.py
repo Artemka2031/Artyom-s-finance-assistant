@@ -1,11 +1,10 @@
 import asyncio
-from aiogram import Dispatcher, Bot
-from aiogram.enums import ParseMode
+
+from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from Routers import startRouter, expensesRouter
 from Routers.Edit import editExpenseCategoriesRouter
-
 from create_bot import bot
 
 
@@ -25,5 +24,5 @@ if __name__ == '__main__':
     try:
         print("Бот запущен")
         asyncio.run(main())
-    except :
+    except:
         print('Закрываю бота')

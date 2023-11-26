@@ -30,14 +30,10 @@ class LimitTypeLenMiddleware(BaseMiddleware):
 
             state_data = (await state.get_data())
 
-            print(state_data)
             sent_message = state_data["sent_message"]
             query_message = state_data["query_message"]
             category_id = state_data["category_id"]
             message_text = event.text
-
-            print(message_text)
-            print(len(message_text))
 
             if len(message_text) >= MAX_LEN:
                 await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
@@ -72,13 +68,9 @@ class LimitCategoryLenMiddleware(BaseMiddleware):
 
             state_data = (await state.get_data())
 
-            print(state_data)
             sent_message = state_data["sent_message"]
             query_message = state_data["query_message"]
             message_text = event.text
-
-            print(message_text)
-            print(len(message_text))
 
             if len(message_text) >= MAX_LEN:
                 await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))

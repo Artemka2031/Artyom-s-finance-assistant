@@ -10,7 +10,6 @@ from Keyboards.Edit.type import NewTypeCallback, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
 
-
 newTypeRouter = Router()
 
 
@@ -58,6 +57,7 @@ async def cancel_new_type_callback(query: CallbackQuery, state: FSMContext, call
                                   reply_markup=create_type_choose_kb(category_id))
 
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
+
 
 newTypeRouter.message.middleware(LimitTypeLenMiddleware())
 
