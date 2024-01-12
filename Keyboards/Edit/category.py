@@ -2,7 +2,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import inline_keyboard_button as ik
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.create_database import ExpenseCategory
+from Database.db_base import ExpenseCategory
 
 
 class ChooseCategoryEditCallback(CallbackData, prefix="Choose C"):

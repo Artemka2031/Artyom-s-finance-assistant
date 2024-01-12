@@ -2,7 +2,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import inline_keyboard_button as ik
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.create_database import ExpenseType, ExpenseCategory
+from Database.db_base import ExpenseType, ExpenseCategory
 
 
 class BaseTypeCallbackData(CallbackData, prefix="Base T Callback"):

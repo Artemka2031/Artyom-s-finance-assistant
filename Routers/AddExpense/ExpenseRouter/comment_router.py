@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.methods import DeleteMessage
 from aiogram.types import Message, CallbackQuery
 
-from Database.create_database import Expense as ExpenseDB
+from Database.db_base import Expense as ExpenseDB
 from Keyboards.Expense.delete import create_delete_expense_kb, DeleteExpense, ConfirmDeleteExpense
 from Routers.AddExpense.expense_state_class import Expense
 from create_bot import bot

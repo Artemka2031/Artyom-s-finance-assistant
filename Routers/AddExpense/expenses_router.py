@@ -55,5 +55,5 @@ expensesRouter.include_router(categoryRouter)
 # Добавляем роутер для работы с суммой расхода
 expensesRouter.include_router(amountRouter)
 
-# Добавляем роутер для работы с суммой расхода
+# Добавляем роутер для работы с комментарием расхода и удалением расхода 
 expensesRouter.include_router(commentRouter)

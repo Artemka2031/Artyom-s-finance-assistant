@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageReplyMarkup
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.create_database import ExpenseCategory, ExpenseType
+from Database.db_base import ExpenseCategory, ExpenseType
 from Keyboards.Edit.type import NewTypeCallback, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot

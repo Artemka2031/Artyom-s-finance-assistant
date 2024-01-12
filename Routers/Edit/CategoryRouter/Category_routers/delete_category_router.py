@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery
 
-from Database.create_database import ExpenseCategory
+from Database.db_base import ExpenseCategory
 from Keyboards.Edit.category import create_category_choose_kb
 from Keyboards.Edit.type import DeleteCategoryCallback, CancelCategoryDeleteCallback, create_type_choose_kb
 

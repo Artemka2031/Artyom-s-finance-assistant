@@ -1,3 +1,4 @@
-from Routers.AddExpense.expenses_router import expensesRouter
-from Routers.Edit.edit_expense_category_router import editExpenseCategoriesRouter
+from Routers.AddExpense import expensesRouter
+from Routers.Edit import editExpenseCategoriesRouter
 from Routers.start_router import startRouter
+from Routers.Staticstic import expenseStatisticRouter

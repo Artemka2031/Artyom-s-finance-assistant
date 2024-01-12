@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram.filters.callback_data import CallbackData
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.create_database import ExpenseCategory
+from Database.db_base import ExpenseCategory
 
 
 class TodayCallback(CallbackData, prefix="TDC"):
