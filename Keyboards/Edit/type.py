@@ -1,8 +1,8 @@
 from aiogram.filters.callback_data import CallbackData
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import inline_keyboard_button as ik
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.create_database import ExpenseType, ExpenseCategory
+from Database.db_base import ExpenseType, ExpenseCategory
 
 
 class BaseTypeCallbackData(CallbackData, prefix="Base T Callback"):
@@ -26,7 +26,7 @@ class NewTypeCallback(CallbackData, prefix="New T"):
     create: bool
 
 
-class BackToCategoriesCallback(CallbackData, prefix="Back to C"):
+class BackToCategoriesEditCallback(CallbackData, prefix="Back to C"):
     back: bool
 
 
@@ -68,7 +68,7 @@ def create_type_choose_kb(category_id: int, create: bool = True,
     chooseTypeB.adjust(2)
 
     back_button = ik.InlineKeyboardButton(text="Категории",
-                                          callback_data=BackToCategoriesCallback(back=True).pack())
+                                          callback_data=BackToCategoriesEditCallback(back=True).pack())
 
     if create:
         chooseTypeB.row(ik.InlineKeyboardButton(text="Новый тип",

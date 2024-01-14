@@ -1,58 +1,59 @@
-import logging
-from datetime import datetime
-import re
-
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.methods import DeleteMessage
+from aiogram.types import Message
 
-from Keyboards.Expense.category import create_category_button, add_expense_kb, DateChooseCallback
+from Keyboards.Expense.category import create_today_kb
+from Routers.AddExpense.ExpenseRouter.amount_router import amountRouter
+from Routers.AddExpense.ExpenseRouter.category_router import categoryRouter
+from Routers.AddExpense.ExpenseRouter.comment_router import commentRouter
+from Routers.AddExpense.ExpenseRouter.date_router import dateRouter
+from Routers.AddExpense.expense_state_class import Expense
+from create_bot import bot
 
 expensesRouter = Router()
 
 
-class Expense(StatesGroup):
-    query_message = State()
-    date = State()
-    set_date = State()
-    get_date = State()
-    category = State()
-    type = State()
-    amount = State()
-    comment = State()
-
-
 @expensesRouter.message(Command("expense"))
 @expensesRouter.message(F.text.casefold() == "расход")
-async def start_messaging(message: Message, state: FSMContext) -> None:
-    await state.set_state(Expense.current_date)
-
-    today = datetime.today()
-    formatted_date = today.strftime('%d.%m.%y')
-
-    await state.update_data(date=formatted_date)
-
-    await message.answer(text="Добавьте параметры расхода",
-                         reply_markup=add_expense_kb(formatted_date))
+async def start_expense_adding(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    sent_message = await message.answer(text="Выберете дату расхода:",
+                                        reply_markup=create_today_kb())
+    await state.update_data(date_message_id=sent_message.message_id)
+    await state.set_state(Expense.date)
 
 
-@expensesRouter.callback_query(DateChooseCallback.filter())
-async def change_date(query: CallbackQuery, state: FSMContext):
-    await query.answer()
+@expensesRouter.message(Command("cancel_expense"))
+@expensesRouter.message(F.text.casefold() == "отмена расхода")
+async def delete_expense_adding(message: Message, state: FSMContext) -> None:
+    chat_id = message.chat.id
+    data = await state.get_data()
+    await message.delete()
 
-    await query.message.answer(text='Напишите дату в формате "дд.мм.гг":')
-    await state.set_state(Expense.get_date)
+    fields_to_check = ["date_message_id", "category_message_id", "amount_message_id", "comment_message_id"]
+
+    delete_messages = [data[field] for field in fields_to_check if field in data]
+
+    extra_messages = data.get("extra_messages", [])
+    delete_messages.extend(extra_messages)
+
+    for message_id in delete_messages:
+        await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
+
+    await message.answer(text="Расход отменён")
+    await state.clear()
 
 
-@expensesRouter.message(Expense.get_date, re.match(r'\d{2}.\d{2}.\d{2}', F.text) is None)
-async def invalid_date_format(message: Message, state: FSMContext):
-    await message.answer(text="Введённая дата не того формата, повторите:")
-    await state.set_state(Expense.get_date)
+# Добавляем роутер по работе с датой
+expensesRouter.include_router(dateRouter)
 
+# Добавляем роутер для работы с категориями
+expensesRouter.include_router(categoryRouter)
 
-@expensesRouter.message(Expense.get_date)
-async def get_date(message: Message, state: FSMContext):
-    date = message.text
-    await state.update_data(date=date)
+# Добавляем роутер для работы с суммой расхода
+expensesRouter.include_router(amountRouter)
+
+# Добавляем роутер для работы с комментарием расхода и удалением расхода 
+expensesRouter.include_router(commentRouter)

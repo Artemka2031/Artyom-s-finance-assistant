@@ -1,9 +1,10 @@
 from aiogram import Router
 from aiogram.types import CallbackQuery
 
-from .Category_routers import deleteCategoryRouter, newCategoryRouter, renameCategoryRouter
 from Keyboards.Edit.category import ChooseCategoryEditCallback
 from Keyboards.Edit.type import create_type_choose_kb
+from .Category_routers import deleteCategoryRouter, newCategoryRouter, renameCategoryRouter
+
 categoryEditRouter = Router()
 
 
