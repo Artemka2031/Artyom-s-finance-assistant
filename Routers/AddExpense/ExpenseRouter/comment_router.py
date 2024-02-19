@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.methods import DeleteMessage
 from aiogram.types import Message, CallbackQuery
 
-from Database.db_base import Expense as ExpenseDB
+from Database.Tables.ExpensesTables import Expense as ExpenseDB
 from Keyboards.Expense.delete import create_delete_expense_kb, DeleteExpense, ConfirmDeleteExpense
 from Routers.AddExpense.expense_state_class import Expense
 from create_bot import bot
@@ -25,7 +25,7 @@ async def set_comment(message: Message, state: FSMContext):
     type_name = data["type"]["type_name"]
     amount = data["amount"]
 
-    expense = ExpenseDB.add_expense(date, category_id, type_id, amount, comment)
+    expense = ExpenseDB.add(date, category_id, type_id, amount, comment)
     expense_id = expense.id
 
     messages_ids = [data["date_message_id"], data["category_message_id"],
@@ -63,7 +63,7 @@ async def delete_expense(query: CallbackQuery, callback_data: DeleteExpense):
     expense_id = callback_data.expense_id
 
     try:
-        ExpenseDB.delete_expense(expense_id)
+        ExpenseDB.remove(expense_id)
         await query.message.edit_text(text="<b>***Удалено***</b>\n" + message_text, reply_markup=None)
     except ExpenseDB.DoesNotExist:
         await query.message.answer(text="Расход не найден")

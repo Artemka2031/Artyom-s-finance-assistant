@@ -2,7 +2,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import inline_keyboard_button as ik
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.db_base import ExpenseType, ExpenseCategory
+from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
 
 
 class BaseTypeCallbackData(CallbackData, prefix="Base T Callback"):
@@ -51,7 +51,7 @@ def create_type_choose_kb(category_id: int, create: bool = True,
     chooseTypeB = InlineKeyboardBuilder()
 
     types = ExpenseType.get_all_types(category_id)
-    category_name = ExpenseCategory.get_category_name(category_id)
+    category_name = ExpenseCategory.get_name_by_id(category_id)
 
     for type_dic in types:
         category_id = int(type_dic["category_id"])

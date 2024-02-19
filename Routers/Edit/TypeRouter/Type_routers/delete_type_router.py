@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery
 
-from Database.db_base import ExpenseType
+from Database.Tables.ExpensesTables import ExpenseType
 from Keyboards.Edit.type import DeleteTypeCallback, CancelTypeDeleteCallback, create_edit_type_kb, create_type_choose_kb
 
 deleteTypeRouter = Router()

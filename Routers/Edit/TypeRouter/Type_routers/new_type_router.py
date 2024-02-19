@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageReplyMarkup
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.db_base import ExpenseCategory, ExpenseType
+from Database.Tables.ExpensesTables import ExpenseCategory, ExpenseType
 from Keyboards.Edit.type import NewTypeCallback, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
@@ -47,7 +47,7 @@ async def cancel_new_type_callback(query: CallbackQuery, state: FSMContext, call
     chat_id = query.message.chat.id
 
     category_id = callback_data.category_id
-    category_name = ExpenseCategory.get_category_name(category_id)
+    category_name = ExpenseCategory.get_name_by_id(category_id)
     sent_message = (await state.get_data())["sent_message"]
 
     await query.answer()
@@ -72,14 +72,14 @@ async def add_new_type(message: Message, state: FSMContext):
 
     data = await state.get_data()
     category_id = data['category_id']
-    category_name = ExpenseCategory.get_category_name(category_id)
+    category_name = ExpenseCategory.get_name_by_id(category_id)
     sent_message_id = data['sent_message']
     query_message_id = data['query_message']
 
     await state.clear()
 
     try:
-        ExpenseType.add_expense_type(category_id, type_name)
+        ExpenseType.add_type(type_name, category_id)
     except IntegrityError:
         await message.answer(text=f"Тип с именем '{type_name}' уже существует в категории '{category_name}'.")
 

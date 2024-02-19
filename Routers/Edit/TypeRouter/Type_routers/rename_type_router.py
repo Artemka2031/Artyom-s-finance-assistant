@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageText
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.db_base import ExpenseType
+from Database.Tables.ExpensesTables import ExpenseType
 from Keyboards.Edit.type import RenameTypeCallback, CancelTypeRenameCallback, create_edit_type_kb, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
@@ -88,7 +88,7 @@ async def rename_type(message: Message, state: FSMContext):
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
     try:
-        ExpenseType.rename_type(category_id, type_id, new_type_name)
+        ExpenseType.rename_type(type_id, new_type_name)
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите тип для изменения \nв категории: "{category_name}":',
                                   reply_markup=create_type_choose_kb(category_id=category_id)))

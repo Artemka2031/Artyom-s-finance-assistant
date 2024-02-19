@@ -1,6 +1,6 @@
 import logging
 
-from peewee import SqliteDatabase, CharField, Model, IntegrityError, ForeignKeyField
+from peewee import SqliteDatabase, CharField, Model, IntegrityError, ForeignKeyField, DateField
 
 from Path import dbPath
 
@@ -22,136 +22,192 @@ def initialize_logger(logger_name, log_level=logging.INFO):
 
 
 class BaseCategory(Model):
+    """
+    Represents a generic category used across different types of financial operations.
+    Provides methods for creating, retrieving, and managing categories in a database.
+    """
+
     name = CharField(unique=True)
+    # Инициализация logger как атрибута класса
+    logger = initialize_logger(f"BaseCategory_logger")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = initialize_logger(f"{self.__class__.__name__}Logger")
+        self.logger = initialize_logger(f"{self.__class__.__name__}_logger")
+
+    class Meta:
+        database = db
+        abstract = True
 
     @classmethod
-    def add_category(cls, name: str):
+    def add(cls, name: str):
+        """
+        Adds a new category with the specified name to the database.
+
+        :param name: The name of the new category.
+        :raises IntegrityError: If a category with the given name already exists.
+        """
         try:
             new_category = cls.create(name=name)
-            cls.logger.info(f"Категория '{new_category.name}' успешно добавлена.")
+            cls.logger.info(f"Category '{new_category.name}' added successfully.")
         except IntegrityError:
-            cls.logger.warning(f"Категория с именем '{name}' уже существует в базе данных.")
-            raise IntegrityError(f"Категория с именем '{name}' уже существует в базе данных.")
+            cls.logger.warning(f"Category '{name}' already exists.")
+            raise IntegrityError(f"Category '{name}' already exists.")
 
     @classmethod
-    def get_all_categories(cls) -> list:
+    def get_all(cls) -> list:
+        """
+        Retrieves all categories from the database.
+
+        :return: A list of dicts with 'id' and 'name' for each category.
+        """
         try:
             categories = cls.select()
-            category_list = [{"id": category.id, "name": category.name} for category in categories]
-            return category_list
+            return [{"id": category.id, "name": category.name} for category in categories]
         except Exception as e:
-            cls.logger.error(f"Error: {e}")
+            cls.logger.error(f"Failed to retrieve categories: {e}")
             return []
 
     @classmethod
-    def get_category_name(cls, category_id: int) -> str | None:
+    def get_name_by_id(cls, category_id: int) -> str | None:
+        """
+        Retrieves a category name by its ID.
+
+        :param category_id: ID of the category to find.
+        :return: Name of the category or None if not found.
+        """
         try:
             category = cls.get(cls.id == category_id)
             return category.name
         except cls.DoesNotExist:
-            cls.logger.warning(f"Категория с ID {category_id} не найдена.")
+            cls.logger.warning(f"Category ID {category_id} not found.")
             return None
         except Exception as e:
             cls.logger.error(f"Error: {e}")
             return None
 
     @classmethod
-    def get_category_id(cls, category_name) -> int | None:
+    def get_id_by_name(cls, name: str) -> int | None:
+        """
+        Retrieves a category ID by its name.
+
+        :param name: Name of the category to find.
+        :return: ID of the category or None if not found.
+        """
         try:
-            category = cls.get(cls.name == category_name)
+            category = cls.get(cls.name == name)
             return category.id
         except cls.DoesNotExist:
-            cls.logger.warning(f"Категория с именем '{category_name}' не найдена.")
+            cls.logger.warning(f"Category '{name}' not found.")
             return None
         except Exception as e:
             cls.logger.error(f"Error: {e}")
             return None
 
-    class Meta:
-        database = db
+    @classmethod
+    def change_category_name(cls, category_id, new_category_name):
+        """
+        Changes the name of an existing category identified by its ID to a new name.
+
+        :param category_id: The ID of the category to be renamed.
+        :param new_category_name: The new name for the category.
+        :raises DoesNotExist: If no category with the specified ID exists.
+        :raises IntegrityError: If a category with the new name already exists.
+        """
+        try:
+            category = cls.get_by_id(category_id)
+            category.name = new_category_name
+            category.save()  # This might raise IntegrityError if the new name already exists.
+            cls.logger.info(f"Category ID {category_id} was successfully renamed to '{new_category_name}'.")
+        except cls.DoesNotExist:
+            cls.logger.error(f"No category found with ID {category_id}. Unable to rename.")
+            raise
+        except IntegrityError:
+            cls.logger.error(
+                f"A category with the name '{new_category_name}' already exists. Cannot rename category ID {category_id}.")
+            raise
 
 
 class BaseType(Model):
-    category = ForeignKeyField(BaseCategory)
-    name = CharField(unique=False)
-    category_class = None  # Добавляем поле для хранения класса категории
+    """
+    Abstract base class for types associated with categories. This class provides common functionality
+    to add, retrieve, and manage types in a database. It should be extended by specific type classes
+    that define a `category_class` to associate with a specific category.
+    """
+    name = CharField(unique=True)
+    logger = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = initialize_logger(f"{self.__class__.__name__}Logger")
+        # Initialize logger using the specialized function
+        self.logger = initialize_logger(f"{self.__class__.__name__}_logger")
+
+    class Meta:
+        database = db
+        abstract = True
+
+    @property
+    def category_class(self):
+        """
+        This property should be overridden in child classes to return the associated category class.
+
+        :raises NotImplementedError: If the child class does not implement this property.
+        """
+        raise NotImplementedError("Child class must define the `category_class` property.")
 
     @classmethod
-    def get_category_class(cls):
-        return cls.category_class
-
-    @classmethod
-    def add_type(cls, category_id: int, name: str) -> None:
+    def add_type(cls, type_name, category_id):
+        # Теперь правильно используем category_class для доступа к классу категории
+        CategoryModel = cls.category_class.fget(None)  # Получаем класс модели категории
+        print(CategoryModel)
         try:
-            category = cls.get_category_class().get(cls.get_category_class().id == category_id)
-
-            # Проверяем, существует ли тип с таким именем внутри указанной категории
-            existing_type = cls.select().where(
-                (cls.category == category) &
-                (cls.name == name)
-            ).first()
-
-            if existing_type:
-                cls.logger.warning(f"Тип с именем '{name}' уже существует в категории '{category.name}'.")
-                raise IntegrityError(f"Тип с именем '{name}' уже существует в категории '{category.name}'.")
-            else:
-                new_type = cls.create(category=category, name=name)
-                cls.logger.info(f"Успешно добавлен в категорию '{category.name}' тип '{new_type.name}'.")
-        except cls.get_category_class().DoesNotExist:
-            cls.logger.warning(f"Категория с ID {category_id} не найдена.")
-            raise ValueError(f"Категория с ID {category_id} не найдена.")
-        except IntegrityError:
-            raise IntegrityError(f"Тип с именем '{name}' уже существует в категории '{category.name}'.")
+            category = CategoryModel.get(CategoryModel.id == category_id)
+            new_type = cls.create(name=type_name, category=category)
+            # Логирование и дальнейшие действия...
+        except CategoryModel.DoesNotExist:
+            # Обработка случая, когда категория не найдена
+            pass
         except Exception as e:
-            cls.logger.error(f"Error: {e}")
-            raise e
+            # Обработка других исключений
+            pass
 
     @classmethod
     def move_type(cls, type_id: int, from_category_id: int, to_category_id: int):
+        """
+        Moves a type from one category to another.
+
+        :param type_id: The ID of the type to move.
+        :param from_category_id: The ID of the current category of the type.
+        :param to_category_id: The ID of the new category for the type.
+        """
         try:
-            # Поиск исходной и целевой категорий
-            from_category = cls.get_category_class().get(cls.get_category_class().id == from_category_id)
-            to_category = cls.get_category_class().get(cls.get_category_class().id == to_category_id)
+            # Ensure both categories exist
+            from_category = cls.category_class.get_by_id(from_category_id)
+            to_category = cls.category_class.get_by_id(to_category_id)
 
-            # Поиск и перемещение типа
-            expense_type = cls.get(cls.id == type_id)
-            expense_type.category = to_category
-            expense_type.save()
+            # Move the type to the new category
+            type_instance = cls.get_by_id(type_id)
+            type_instance.category = to_category
+            type_instance.save()
 
-            cls.logger.info(
-                f"Тип '{expense_type.name}' успешно перемещен из категории '{from_category.name}' "
-                f"в категорию '{to_category.name}'."
-            )
-        except cls.DoesNotExist:
-            cls.logger.warning(f"Ошибка: Тип с ID {type_id} не найден.")
-        except cls.get_category_class().DoesNotExist:
-            cls.logger.warning(f"Ошибка: Категория не найдена.")
-        except IntegrityError:
-            cls.logger.warning("Ошибка: Проверьте уникальность значения, возможно, такой тип уже существует.")
-        except Exception as e:
-            cls.logger.error(f"Ошибка при перемещении типа: {e}")
+            cls.logger.info(f"Type '{type_instance.name}' moved from '{from_category.name}' to '{to_category.name}'.")
+        except cls.DoesNotExist as e:
+            cls.logger.error(f"Error moving type: {e}")
+            raise
 
     @classmethod
     def get_all_types(cls, category_id: int):
+        """
+        Retrieves all types within a specific category.
+
+        :param category_id: The ID of the category to retrieve types from.
+        :return: A list of type information dictionaries.
+        """
         try:
-            types = cls.select().where(cls.category == category_id)
-            type_data = [{
-                "type_id": type_.id,
-                "type_name": type_.name,
-                "category_id": type_.category.id,
-                "category_name": type_.category.name,
-            } for type_ in types]
-            return type_data
+            types = cls.select().where(cls.category_id == category_id)
+            return [{"type_id": type_.id, "type_name": type_.name} for type_ in types]
         except Exception as e:
-            cls.logger.error(f"Error: {e}")
+            cls.logger.error(f"Error retrieving types: {e}")
             return []
 
     @classmethod
@@ -180,45 +236,125 @@ class BaseType(Model):
             return None
 
     @classmethod
-    def rename_type(cls, category_id: int, type_id: int, new_name: str) -> None:
+    def rename_type(cls, type_id: int, new_name: str):
+        """
+        Renames a specific type by its ID.
+
+        :param type_id: ID of the type to rename.
+        :param new_name: New name for the type.
+        """
         try:
-            old_name = cls.get_type_name(category_id, type_id)
-            expense_type = cls.get((cls.id == type_id) & (cls.category_id == category_id))
+            type_instance = cls.get_by_id(type_id)
+            # Check for uniqueness of the new name within the same category
+            if cls.select().where(cls.name == new_name, cls.category_id == type_instance.category_id).exists():
+                cls.logger.warning(f"Type name '{new_name}' already exists in the same category.")
+                raise IntegrityError(f"Type name '{new_name}' already exists in the same category.")
 
-            # Проверяем, существует ли тип с таким же именем в той же категории
-            existing_type = cls.select().where(
-                (cls.category == expense_type.category) &
-                (cls.name == new_name)
-            ).first()
-
-            if existing_type:
-                cls.logger.warning(
-                    f"Ошибка: Тип с названием '{new_name}' уже существует в категории '{expense_type.category.name}'.")
-                raise IntegrityError(
-                    f"Ошибка: Тип с названием '{new_name}' уже существует в категории '{expense_type.category.name}'.")
-            else:
-                expense_type.name = new_name
-                expense_type.save()
-                cls.logger.info(f"Изменено название типа с '{old_name}' на '{new_name}'")
+            old_name = type_instance.name
+            type_instance.name = new_name
+            type_instance.save()
+            cls.logger.info(f"Type name changed from '{old_name}' to '{new_name}'.")
         except cls.DoesNotExist:
-            cls.logger.warning(f"Ошибка: Тип с ID {type_id} и категорией {category_id} не найден.")
-        except IntegrityError:
-            raise IntegrityError(
-                f"Ошибка: Тип с названием '{new_name}' уже существует в категории '{expense_type.category.name}'.")
+            cls.logger.warning(f"Type with ID {type_id} not found.")
         except Exception as e:
-            cls.logger.error(f"Ошибка при изменении названия типа: {e}")
+            cls.logger.error(f"Error renaming type: {e}")
 
-    @classmethod
-    def get_type_name(cls, category_id: int, type_id: int) -> str | None:
-        try:
-            expense_type = cls.get(cls.id == type_id, cls.category_id == category_id)
-            return expense_type.name
-        except cls.DoesNotExist:
-            cls.logger.warning(f"Категория с ID {type_id} и category_id {category_id} не найдена.")
-            return None
-        except Exception as e:
-            cls.logger.error(f"Error: {e}")
-            return None
+
+class BaseOperations(Model):
+    """
+    Abstract base class for financial operations such as expenses and incomes.
+    """
+    date = DateField()
+    # ForeignKeyField должен быть переопределен в подклассах для указания конкретных моделей категории и типа
+    # category = ForeignKeyField(null=True)
+    # type = ForeignKeyField(null=True)
+    amount = CharField()
+    comment = CharField()
+
+    # Логгер для регистрации событий, связанных с операциями
+    logger = initialize_logger("BaseOperations")
 
     class Meta:
         database = db
+        abstract = True
+
+    @classmethod
+    def add(cls, date, category_id, type_id, amount, comment):
+        """
+        Adds a new financial operation to the database.
+
+        :param date: The date of the operation.
+        :param category_id: The ID of the category associated with the operation.
+        :param type_id: The ID of the type associated with the operation.
+        :param amount: The amount of money involved in the operation.
+        :param comment: Additional comments about the operation.
+        :return: The instance of the newly created operation.
+        """
+        try:
+            category = cls.category.get_by_id(category_id)
+            operation_type = cls.type.get_by_id(type_id)
+            operation = cls.create(date=date, category=category, type=operation_type, amount=amount, comment=comment)
+            cls.logger.info("New operation added successfully.")
+            return operation
+        except IntegrityError as e:
+            cls.logger.error(f"Failed to add new operation: {e}")
+            raise
+
+    @classmethod
+    def remove(cls, operation_id):
+        """
+        Removes a financial operation from the database by its ID.
+
+        :param operation_id: The ID of the operation to remove.
+        """
+        try:
+            operation = cls.get_by_id(operation_id)
+            operation.delete_instance()
+            cls.logger.info(f"Operation with ID {operation_id} was successfully deleted.")
+        except cls.DoesNotExist:
+            cls.logger.warning(f"Operation with ID {operation_id} not found.")
+            raise
+
+    @classmethod
+    def get_all(cls):
+        """
+        Retrieves all financial operations from the database.
+
+        :return: A list of dictionaries, each representing an operation.
+        """
+        try:
+            operations = cls.select()
+            return [{
+                "id": operation.id,
+                "date": operation.date,
+                "category": operation.category.name if operation.category else "N/A",
+                "type": operation.type.name if operation.type else "N/A",
+                "amount": operation.amount,
+                "comment": operation.comment
+            } for operation in operations]
+        except Exception as e:
+            cls.logger.error(f"Failed to retrieve operations: {e}")
+            return []
+
+    @classmethod
+    def get_by_time_interval(cls, start_date, end_date):
+        """
+        Retrieves financial operations within a specific time interval.
+
+        :param start_date: The start date of the interval.
+        :param end_date: The end date of the interval.
+        :return: A list of dictionaries, each representing an operation within the interval.
+        """
+        try:
+            operations = cls.select().where((cls.date >= start_date) & (cls.date <= end_date))
+            return [{
+                "id": operation.id,
+                "date": operation.date,
+                "category": operation.category.name if operation.category else "N/A",
+                "type": operation.type.name if operation.type else "N/A",
+                "amount": operation.amount,
+                "comment": operation.comment
+            } for operation in operations]
+        except Exception as e:
+            cls.logger.error(f"Failed to retrieve operations by time interval: {e}")
+            return []
