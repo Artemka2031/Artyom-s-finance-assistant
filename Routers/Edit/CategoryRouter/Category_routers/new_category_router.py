@@ -69,7 +69,7 @@ async def add_new_category(message: Message, state: FSMContext):
     await state.clear()
 
     try:
-        ExpenseCategory.add_category(category_name)
+        ExpenseCategory.add(category_name)
     except IntegrityError:
         await message.answer(text=f"Категория с именем '{category_name}' уже существует в базе данных.")
 

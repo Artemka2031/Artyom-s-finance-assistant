@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from Database.db_base import ExpenseCategory
+from Database.Tables.ExpensesTables import ExpenseCategory
 from Keyboards.Edit.category import create_category_choose_kb
 from Keyboards.Edit.type import BackToCategoriesEditCallback, BackToTypesCallback, ChooseTypeEditCallback, \
     create_edit_type_kb, \
@@ -33,7 +33,7 @@ async def back_to_types_callback(query: CallbackQuery, callback_data: BackToType
     await query.answer()
 
     category_id = callback_data.category_id
-    category_name = ExpenseCategory.get_category_name(category_id)
+    category_name = ExpenseCategory.get_name_by_id(category_id)
 
     await query.message.edit_text(text=f'Выберите тип для изменения \nв категории: "{category_name}"',
                                   reply_markup=create_type_choose_kb(category_id=category_id, create=True))

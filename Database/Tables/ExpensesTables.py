@@ -1,149 +1,108 @@
-from datetime import datetime, timedelta
+from peewee import ForeignKeyField
 
-from peewee import Model, IntegrityError, CharField, ForeignKeyField, DateField, JOIN
-
-from Database.db_base import initialize_logger, db, BaseCategory, BaseType
-from Database.time_intervals import TimeInterval
-
+from Database.db_base import BaseCategory, BaseType, BaseOperations, initialize_logger
 
 
 class ExpenseCategory(BaseCategory):
-    # Добавьте специфичные для расходов методы и поля, если необходимо
+    """
+    Represents a category of expenses.
+    """
+
+    logger = initialize_logger(f"ExpenseCategory")
+
+    @classmethod
+    def delete_category(cls, category_id):
+        """
+        Deletes an expense category and all associated expense types.
+
+        :param category_id: The ID of the category to be deleted.
+        :raises DoesNotExist: If no category with the specified ID exists.
+        """
+        try:
+            # Находим и удаляем все типы расходов, связанные с этой категорией
+            types_in_category = ExpenseType.select().where(ExpenseType.category_id == category_id)
+            for expense_type in types_in_category:
+                # Дополнительно здесь можно добавить логику по удалению или обновлению связанных операций
+                expense_type.delete_instance()
+
+            # Удаляем саму категорию
+            category = cls.get_by_id(category_id)
+            category.delete_instance()
+            cls.logger.info(f"Category ID {category_id} and all associated types were successfully deleted.")
+        except cls.DoesNotExist:
+            cls.logger.error(f"No category found with ID {category_id}. Unable to delete.")
+            raise
 
     class Meta:
-        db_table = "ExpenseCategories"
+        db_table = 'expense_categories'
 
 
 class ExpenseType(BaseType):
-    category = ForeignKeyField(ExpenseCategory)
-    category_class = ExpenseCategory
-    operation_class = Expense  # Подставьте нужный класс для расходов/приходов
+    """
+    Represents a type of expense within a category.
+    """
+    category = ForeignKeyField(ExpenseCategory, backref='expense_types')
+    logger = initialize_logger(f"ExpenseType")
 
-    class Meta:
-        database = db
-        db_table = "ExpenseTypes"
+    @classmethod
+    def delete_type(cls, type_id):
+        """
+        Deletes an expense type and all associated expenses.
 
-class Expense(Model):
-    date = DateField()
-    category = ForeignKeyField(ExpenseCategory)
-    type = ForeignKeyField(ExpenseType)
-    amount = CharField()
-    comment = CharField()
-
-    logger = initialize_logger("Expense")
-
-    @staticmethod
-    def get_all_expenses():
-        try:
-            expenses = Expense.select()
-            expense_list = []
-            for expense in expenses:
-                expense_dict = {
-                    "id": expense.id,
-                    "date": expense.date,
-                    "category": expense.category.name,
-                    "type": expense.type.name,
-                    "amount": expense.amount,
-                    "comment": expense.comment
-                }
-                expense_list.append(expense_dict)
-            return expense_list
-        except Exception as e:
-            Expense.logger.error(f"Ошибка при получении всех расходов: {e}")
-            return []
-
-    @staticmethod
-    def add_expense(date, category_id, type_id, amount, comment):
-        try:
-            category = ExpenseCategory.get(ExpenseCategory.id == category_id)
-            expense_type = ExpenseType.get(ExpenseType.id == type_id)
-            new_expense = Expense.create(date=date, category=category, type=expense_type, amount=amount,
-                                         comment=comment)
-            Expense.logger.info(
-                f"В категорию '{category.name}' добавлен новый расход (ID: {new_expense.id}, Дата: {date}, "
-                f"Тип: {expense_type.name}, Сумма: {amount}, Комментарий: {comment})")
-
-            return new_expense
-
-        except ExpenseCategory.DoesNotExist:
-            Expense.logger.warning(f"Ошибка: Категория с ID {category_id} не найдена.")
-        except ExpenseType.DoesNotExist:
-            Expense.logger.warning(f"Ошибка: Тип с ID {type_id} не найден.")
-        except IntegrityError:
-            Expense.logger.warning("Ошибка: Проверьте уникальность значения, возможно, такой расход уже существует.")
-        except Exception as e:
-            Expense.logger.error(f"Ошибка при добавлении расхода: {e}")
-
-    @staticmethod
-    def delete_expense(expense_id):
-        try:
-            expense = Expense.get(Expense.id == expense_id)
+        :param type_id: int, The ID of the expense type to be deleted.
+        """
+        # Находим все расходы, связанные с этим типом, и удаляем их
+        expenses = Expense.select().where(Expense.type == type_id)
+        for expense in expenses:
             expense.delete_instance()
-            Expense.logger.info(f"Расход с ID {expense_id} успешно удален. "
-                                f"(Дата: {expense.date}, Категория: {expense.category.name}, Тип: {expense.type.name}, "
-                                f"Сумма: {expense.amount}, Комментарий: {expense.comment})")
-        except Expense.DoesNotExist:
-            Expense.logger.warning(f"Ошибка: Расход с ID {expense_id} не найден.")
-            raise Expense.DoesNotExist(f"Ошибка: Расход с ID {expense_id} не найден.")
-        except Exception as e:
-            Expense.logger.error(f"Ошибка при удалении расхода: {e}")
-            raise Exception(f"Ошибка при удалении расхода: {e}")
 
-    @staticmethod
-    def get_expenses_in_category_by_time_interval(time_interval: str, category_id: int = None):
-        try:
-            today = datetime.now().date()
+        # Удаляем сам тип расхода
+        type_instance = cls.get_by_id(type_id)
+        type_instance.delete_instance()
+        cls.logger.info(f"ExpenseType with ID {type_id} and all associated expenses were successfully deleted.")
 
-            if time_interval == TimeInterval.TODAY.value:
-                start_date = today
-            elif time_interval == TimeInterval.LAST_WEEK.value:
-                start_date = today - timedelta(days=today.weekday())
-            elif time_interval == TimeInterval.CURRENT_MONTH.value:
-                start_date = today.replace(day=1)
-            else:
-                raise ValueError("Неподдерживаемый временной интервал")
-
-            # Преобразуем даты в формат "день.месяц.год"
-            formatted_today = today.strftime("%d.%m.%y")
-            formatted_start_date = start_date.strftime("%d.%m.%y")
-
-            query = Expense.select(Expense, ExpenseCategory, ExpenseType).join(
-                ExpenseCategory, JOIN.INNER, on=(Expense.category == ExpenseCategory.id)
-            ).join(
-                ExpenseType, JOIN.INNER, on=(Expense.type == ExpenseType.id)
-            ).where(
-                (Expense.date >= formatted_start_date) & (Expense.date <= formatted_today)
-            )
-
-            if category_id is not None:
-                query = query.where(Expense.category == category_id)
-
-            expenses = query.execute()
-
-            result_dict = {}
-            for expense in expenses:
-                category_id = expense.category.id
-                type_id = expense.type.id
-
-                if category_id not in result_dict:
-                    result_dict[category_id] = {}
-
-                if type_id not in result_dict[category_id]:
-                    result_dict[category_id][type_id] = []
-
-                result_dict[category_id][type_id].append({
-                    "id": expense.id,
-                    "date": expense.date,
-                    "amount": expense.amount,
-                    "comment": expense.comment,
-                })
-
-            return result_dict
-
-        except Exception as e:
-            Expense.logger.error(f"Ошибка при получении расходов: {e}")
-            return {}
+    @property
+    def category_class(self):
+        return ExpenseCategory
 
     class Meta:
-        database = db
-        db_table = "Expenses"
+        db_table = 'expense_types'
+
+
+class Expense(BaseOperations):
+    """
+    Represents an expense operation, including its date, category, type, amount, and an optional comment.
+    """
+    category = ForeignKeyField(ExpenseCategory, backref='expenses')
+    type = ForeignKeyField(ExpenseType, backref='expenses')
+    logger = initialize_logger(f"Expense")
+
+    class Meta:
+        db_table = 'expenses'
+
+    @classmethod
+    def remove(cls, expense_id: int):
+        """
+        Removes an expense operation from the database by its ID.
+
+        :param expense_id: int, The ID of the expense operation to be removed. This is the primary key
+                             of the expense record in the database.
+
+        :return: None, The method does not return a value but deletes the specified expense operation
+                        from the database. Raises an exception if the operation cannot be found or
+                        if there is a database error during deletion.
+
+        Raises:
+            DoesNotExist: If no expense operation with the specified ID exists in the database.
+            Exception: If there is a problem executing the delete operation in the database.
+        """
+        try:
+            expense = Expense.get_by_id(expense_id)
+            expense.delete_instance()
+            Expense.logger.info(f"Expense with ID {expense_id} was successfully deleted.")
+        except Expense.DoesNotExist:
+            Expense.logger.error(f"Expense with ID {expense_id} not found.")
+            raise
+        except Exception as e:
+            Expense.logger.error(f"Error removing expense with ID {expense_id}: {e}")
+            raise

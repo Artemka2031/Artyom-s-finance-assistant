@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram.filters.callback_data import CallbackData
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from Database.db_base import ExpenseCategory
+from Database.Tables.ExpensesTables import ExpenseCategory
 
 
 class TodayCallback(CallbackData, prefix="TDC"):
@@ -18,7 +18,7 @@ class ChooseCategoryCallback(CallbackData, prefix="CCC"):
 def category_choose_kb():
     choose_category_b = InlineKeyboardBuilder()
 
-    categories = ExpenseCategory.get_all_categories()
+    categories = ExpenseCategory.get_all()
 
     for category_dic in categories:
         category_id = int(category_dic["id"])
