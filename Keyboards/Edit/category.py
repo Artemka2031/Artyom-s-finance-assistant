@@ -14,10 +14,10 @@ class NewCategoryCallback(CallbackData, prefix="New C"):
     create: bool
 
 
-def create_category_choose_kb(category_create: bool = True):
+def create_category_choose_kb(OperationCategory,category_create: bool = True):
     chooseCategoryB = InlineKeyboardBuilder()
 
-    categories = ExpenseCategory.get_all()
+    categories = OperationCategory.get_all()
 
     for category_dic in categories:
         category_id = int(category_dic["id"])

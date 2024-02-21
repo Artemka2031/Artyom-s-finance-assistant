@@ -5,6 +5,7 @@ from aiogram.dispatcher.flags import get_flag
 from aiogram.methods import DeleteMessage, SendMessage, EditMessageReplyMarkup
 from aiogram.types import Message
 
+from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
 from Keyboards.Edit.category import create_category_choose_kb
 from Keyboards.Edit.type import create_type_choose_kb
 from create_bot import bot
@@ -40,7 +41,8 @@ class LimitTypeLenMiddleware(BaseMiddleware):
                 await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
                 await bot(EditMessageReplyMarkup(chat_id=chat_id,
                                                  message_id=query_message,
-                                                 reply_markup=create_type_choose_kb(category_id)))
+                                                 reply_markup=create_type_choose_kb(category_id,
+                                                                                    ExpenseType, ExpenseCategory)))
                 await bot(SendMessage(chat_id=chat_id, text="Введённое значение слишком длинное."))
                 await state.clear()
                 return
@@ -77,7 +79,7 @@ class LimitCategoryLenMiddleware(BaseMiddleware):
                 await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
                 await bot(EditMessageReplyMarkup(chat_id=chat_id,
                                                  message_id=query_message,
-                                                 reply_markup=create_category_choose_kb()))
+                                                 reply_markup=create_category_choose_kb(ExpenseCategory)))
                 await bot(SendMessage(chat_id=chat_id, text="Введённое значение слишком длинное."))
                 await state.clear()
                 return

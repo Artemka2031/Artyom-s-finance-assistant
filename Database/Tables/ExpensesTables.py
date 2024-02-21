@@ -81,28 +81,15 @@ class Expense(BaseOperations):
         db_table = 'expenses'
 
     @classmethod
-    def remove(cls, expense_id: int):
+    def category_class(cls):
         """
-        Removes an expense operation from the database by its ID.
-
-        :param expense_id: int, The ID of the expense operation to be removed. This is the primary key
-                             of the expense record in the database.
-
-        :return: None, The method does not return a value but deletes the specified expense operation
-                        from the database. Raises an exception if the operation cannot be found or
-                        if there is a database error during deletion.
-
-        Raises:
-            DoesNotExist: If no expense operation with the specified ID exists in the database.
-            Exception: If there is a problem executing the delete operation in the database.
+        Returns the ExpenseCategory class associated with ExpenseOperation.
         """
-        try:
-            expense = Expense.get_by_id(expense_id)
-            expense.delete_instance()
-            Expense.logger.info(f"Expense with ID {expense_id} was successfully deleted.")
-        except Expense.DoesNotExist:
-            Expense.logger.error(f"Expense with ID {expense_id} not found.")
-            raise
-        except Exception as e:
-            Expense.logger.error(f"Error removing expense with ID {expense_id}: {e}")
-            raise
+        return ExpenseCategory
+
+    @classmethod
+    def type_class(cls):
+        """
+        Returns the ExpenseType class associated with ExpenseOperation.
+        """
+        return ExpenseType

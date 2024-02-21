@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageText
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.Tables.ExpensesTables import ExpenseType
+from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
 from Keyboards.Edit.type import RenameTypeCallback, CancelTypeRenameCallback, create_edit_type_kb, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
@@ -37,6 +37,7 @@ async def rename_type_action(query: CallbackQuery, callback_data: RenameTypeCall
     category_name = callback_data.category_name
 
     await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id=category_id, type_id=type_id,
+                                                                           OperationType=ExpenseType,
                                                                            action=RenameTypeCallback.__prefix__))
 
     message = await query.message.answer(text=f'Переименуйте тип "{type_name}" \nв категории "{category_name}":')
@@ -59,7 +60,7 @@ async def cancel_rename_type(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id))
+    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
 
@@ -91,10 +92,10 @@ async def rename_type(message: Message, state: FSMContext):
         ExpenseType.rename_type(type_id, new_type_name)
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите тип для изменения \nв категории: "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id=category_id)))
+                                  reply_markup=create_type_choose_kb(category_id, ExpenseType, ExpenseCategory)))
     except IntegrityError:
         await message.answer(text=f'Тип "{new_type_name}" уже есть в категории "{category_name}"')
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите действие по изменению типа'
                                        f'"{type_name}" в категории "{category_name}":',
-                                  reply_markup=create_edit_type_kb(category_id, type_id)))
+                                  reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType)))

@@ -29,7 +29,9 @@ async def new_type_callback(query: CallbackQuery, callback_data: NewTypeCallback
 
     category_id = callback_data.category_id
     await state.update_data(category_id=category_id)
-    await query.message.edit_reply_markup(reply_markup=create_type_choose_kb(category_id=category_id, create=False))
+    await query.message.edit_reply_markup(
+        reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
+                                           OperationCategory=ExpenseCategory, create=False))
 
     query_message_id = query.message.message_id
     await state.set_state(NewType.query_message)
@@ -54,7 +56,8 @@ async def cancel_new_type_callback(query: CallbackQuery, state: FSMContext, call
     await state.clear()
 
     await query.message.edit_text(text=f'Выберите тип для изменения в категории: "{category_name}"',
-                                  reply_markup=create_type_choose_kb(category_id))
+                                  reply_markup=create_type_choose_kb(category_id, OperationType=ExpenseType,
+                                                                     OperationCategory=ExpenseCategory))
 
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
@@ -85,6 +88,6 @@ async def add_new_type(message: Message, state: FSMContext):
 
     await bot(EditMessageReplyMarkup(chat_id=chat_id,
                                      message_id=query_message_id,
-                                     reply_markup=create_type_choose_kb(category_id)))
+                                     reply_markup=create_type_choose_kb(category_id, ExpenseType, ExpenseCategory)))
     await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message_id))
