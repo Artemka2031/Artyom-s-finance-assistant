@@ -10,6 +10,6 @@ expenseStatisticRouter = Router()
 
 @expenseStatisticRouter.message(Command("expense_statistic"))
 async def start_messaging(message: Message) -> None:
-    # expenses = Expense.get_by_time_interval()
+    # expenses = Operations.get_by_time_interval()
     expenses = None
     await message.answer(f"{hbold('Расходы: ')}\n{expenses}")

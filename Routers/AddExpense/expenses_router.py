@@ -4,18 +4,19 @@ from aiogram.fsm.context import FSMContext
 from aiogram.methods import DeleteMessage
 from aiogram.types import Message
 
-from Keyboards.Expense.category import create_today_kb
+from Keyboards.Operations.category import create_today_kb
 from Routers.AddExpense.ExpenseRouter.amount_router import amountRouter
 from Routers.AddExpense.ExpenseRouter.category_router import categoryRouter
 from Routers.AddExpense.ExpenseRouter.comment_router import commentRouter
 from Routers.AddExpense.ExpenseRouter.date_router import dateRouter
 from Routers.AddExpense.expense_state_class import Expense
+from commands import bot_commands
 from create_bot import bot
 
 expensesRouter = Router()
 
 
-@expensesRouter.message(Command("expense"))
+@expensesRouter.message(Command(bot_commands.add_expense))
 @expensesRouter.message(F.text.casefold() == "расход")
 async def start_expense_adding(message: Message, state: FSMContext) -> None:
     await state.clear()

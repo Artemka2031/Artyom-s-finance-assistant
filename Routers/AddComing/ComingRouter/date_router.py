@@ -3,18 +3,18 @@ from aiogram.fsm.context import FSMContext
 from aiogram.methods import EditMessageText, DeleteMessage
 from aiogram.types import CallbackQuery, Message
 
-from Database.Tables.ExpensesTables import ExpenseCategory
+from Database.Tables.ComingTables import ComingCategory
 from Filters.check_date import CheckDate
 from Keyboards.Operations.category import TodayCallback, category_choose_kb
-from Routers.AddExpense.expense_state_class import Expense
+from Routers.AddComing.coming_state_class import Coming
 from create_bot import bot
 
 dateRouter = Router()
 
 
-@dateRouter.callback_query(Expense.date, TodayCallback.filter())
+@dateRouter.callback_query(Coming.date, TodayCallback.filter())
 async def change_date(query: CallbackQuery, callback_data: TodayCallback, state: FSMContext):
-    await state.set_state(Expense.date)
+    await state.set_state(Coming.date)
     chat_id = query.message.chat.id
 
     try:
@@ -34,14 +34,13 @@ async def change_date(query: CallbackQuery, callback_data: TodayCallback, state:
 
     await state.update_data(date=date)
 
-    category_message = await query.message.answer(text="Выберите категорию:",
-                                                  reply_markup=category_choose_kb(ExpenseCategory))
+    category_message = await query.message.answer(text="Выберите категорию:", reply_markup=category_choose_kb(ComingCategory))
     await state.update_data(category_message_id=category_message.message_id)
 
-    await state.set_state(Expense.category)
+    await state.set_state(Coming.category)
 
 
-@dateRouter.message(Expense.date, CheckDate(F.text))
+@dateRouter.message(Coming.date, CheckDate(F.text))
 async def invalid_date_format(message: Message, state: FSMContext):
     await message.delete()
 
@@ -53,10 +52,10 @@ async def invalid_date_format(message: Message, state: FSMContext):
         incorrect_date_message_id = incorrect_date_message.message_id
         await state.update_data(extra_messages=[incorrect_date_message_id])
 
-    await state.set_state(Expense.date)
+    await state.set_state(Coming.date)
 
 
-@dateRouter.message(Expense.date)
+@dateRouter.message(Coming.date)
 async def set_date_text(message: Message, state: FSMContext):
     date = message.text
     chat_id = message.chat.id
@@ -80,8 +79,7 @@ async def set_date_text(message: Message, state: FSMContext):
     date_message_id = (await state.get_data())["date_message_id"]
     await bot(EditMessageText(chat_id=chat_id, message_id=date_message_id,
                               text=f"Выбрана дата: {date}", reply_markup=None))
-    category_message = await message.answer(text="Выберите категорию:",
-                                            reply_markup=category_choose_kb(ExpenseCategory))
+    category_message = await message.answer(text="Выберите категорию:", reply_markup=category_choose_kb(ComingCategory))
     await state.update_data(category_message_id=category_message.message_id)
 
-    await state.set_state(Expense.category)
+    await state.set_state(Coming.category)

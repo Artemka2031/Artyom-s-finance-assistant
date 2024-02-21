@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageReplyMarkup
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.Tables.ExpensesTables import ExpenseCategory, ExpenseType
+from Database.Tables.ComingTables import ComingCategory, ComingType
 from Keyboards.Edit.type import NewTypeCallback, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
@@ -14,51 +14,51 @@ newTypeRouter = Router()
 
 
 # Новые типы
-class NewExpenseTypeCallback(StatesGroup):
+class NewComingTypeCallback(StatesGroup):
     query_message = State()
     category_id = State()
     sent_message = State()
     type_name = State()
 
 
-@newTypeRouter.callback_query(NewTypeCallback.filter((F.create == True) and (F.operation == "expense")),
+@newTypeRouter.callback_query(NewTypeCallback.filter((F.create == True) and (F.operation == "coming")),
                               flags={"delete_sent_message": True})
 async def new_type_callback(query: CallbackQuery, callback_data: NewTypeCallback, state: FSMContext):
     await query.answer()
 
-    await state.set_state(NewExpenseTypeCallback.query_message)
+    await state.set_state(NewComingTypeCallback.query_message)
 
     category_id = callback_data.category_id
     await state.update_data(category_id=category_id)
     await query.message.edit_reply_markup(
-        reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
-                                           OperationCategory=ExpenseCategory, create=False))
+        reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ComingType,
+                                           OperationCategory=ComingCategory, create=False))
 
     query_message_id = query.message.message_id
-    await state.set_state(NewExpenseTypeCallback.query_message)
+    await state.set_state(NewComingTypeCallback.query_message)
     await state.update_data(query_message=query_message_id)
 
     message = await query.message.answer(text=f"Напишите название нового типа:")
-    await state.set_state(NewExpenseTypeCallback.sent_message)
+    await state.set_state(NewComingTypeCallback.sent_message)
     await state.update_data(sent_message=message.message_id)
 
-    await state.set_state(NewExpenseTypeCallback.type_name)
+    await state.set_state(NewComingTypeCallback.type_name)
 
 
-@newTypeRouter.callback_query(NewExpenseTypeCallback.type_name, NewTypeCallback.filter(F.create == False))
+@newTypeRouter.callback_query(NewComingTypeCallback.type_name, NewTypeCallback.filter(F.create == False))
 async def cancel_new_type_callback(query: CallbackQuery, state: FSMContext, callback_data: NewTypeCallback):
     chat_id = query.message.chat.id
 
     category_id = callback_data.category_id
-    category_name = ExpenseCategory.get_name_by_id(category_id)
+    category_name = ComingCategory.get_name_by_id(category_id)
     sent_message = (await state.get_data())["sent_message"]
 
     await query.answer()
     await state.clear()
 
     await query.message.edit_text(text=f'Выберите тип для изменения в категории: "{category_name}"',
-                                  reply_markup=create_type_choose_kb(category_id, OperationType=ExpenseType,
-                                                                     OperationCategory=ExpenseCategory))
+                                  reply_markup=create_type_choose_kb(category_id, OperationType=ComingType,
+                                                                     OperationCategory=ComingCategory))
 
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
@@ -66,7 +66,7 @@ async def cancel_new_type_callback(query: CallbackQuery, state: FSMContext, call
 newTypeRouter.message.middleware(LimitTypeLenMiddleware())
 
 
-@newTypeRouter.message(NewExpenseTypeCallback.type_name, flags={"limit_len": True})
+@newTypeRouter.message(NewComingTypeCallback.type_name, flags={"limit_len": True})
 async def add_new_type(message: Message, state: FSMContext):
     chat_id = message.chat.id
     message_id = message.message_id
@@ -76,19 +76,19 @@ async def add_new_type(message: Message, state: FSMContext):
 
     data = await state.get_data()
     category_id = data['category_id']
-    category_name = ExpenseCategory.get_name_by_id(category_id)
+    category_name = ComingCategory.get_name_by_id(category_id)
     sent_message_id = data['sent_message']
     query_message_id = data['query_message']
 
     await state.clear()
 
     try:
-        ExpenseType.add_type(type_name, category_id)
+        ComingType.add_type(type_name, category_id)
     except IntegrityError:
         await message.answer(text=f"Тип с именем '{type_name}' уже существует в категории '{category_name}'.")
 
     await bot(EditMessageReplyMarkup(chat_id=chat_id,
                                      message_id=query_message_id,
-                                     reply_markup=create_type_choose_kb(category_id, ExpenseType, ExpenseCategory)))
+                                     reply_markup=create_type_choose_kb(category_id, ComingType, ComingCategory)))
     await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message_id))

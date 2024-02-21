@@ -20,10 +20,9 @@ class ExpenseCategory(BaseCategory):
         """
         try:
             # Находим и удаляем все типы расходов, связанные с этой категорией
-            types_in_category = ExpenseType.select().where(ExpenseType.category_id == category_id)
+            types_in_category = ExpenseType.select().where(ExpenseType.category == category_id)
             for expense_type in types_in_category:
-                # Дополнительно здесь можно добавить логику по удалению или обновлению связанных операций
-                expense_type.delete_instance()
+                ExpenseType.delete_type(expense_type.id)
 
             # Удаляем саму категорию
             category = cls.get_by_id(category_id)
@@ -53,6 +52,7 @@ class ExpenseType(BaseType):
         """
         # Находим все расходы, связанные с этим типом, и удаляем их
         expenses = Expense.select().where(Expense.type == type_id)
+        print(expenses)
         for expense in expenses:
             expense.delete_instance()
 

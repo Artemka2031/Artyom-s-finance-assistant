@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageText
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
+from Database.Tables.ComingTables import ComingType, ComingCategory
 from Keyboards.Edit.type import RenameTypeCallback, CancelTypeRenameCallback, create_edit_type_kb, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitTypeLenMiddleware
 from create_bot import bot
@@ -14,7 +14,7 @@ renameTypeRouter = Router()
 
 
 # Переименование типов
-class RenameExpenseTypeCallback(StatesGroup):
+class RenameComingTypeCallback(StatesGroup):
     query_message = State()
     category_id = State()
     type_id = State()
@@ -24,11 +24,11 @@ class RenameExpenseTypeCallback(StatesGroup):
     new_type_name = State()
 
 
-@renameTypeRouter.callback_query(RenameTypeCallback.filter(F.operation == "expense"))
+@renameTypeRouter.callback_query(RenameTypeCallback.filter(F.operation == "coming"))
 async def rename_type_action(query: CallbackQuery, callback_data: RenameTypeCallback, state: FSMContext):
     await query.answer()
 
-    await state.set_state(RenameExpenseTypeCallback.query_message)
+    await state.set_state(RenameComingTypeCallback.query_message)
 
     query_message_id = query.message.message_id
     category_id = callback_data.category_id
@@ -37,17 +37,17 @@ async def rename_type_action(query: CallbackQuery, callback_data: RenameTypeCall
     category_name = callback_data.category_name
 
     await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id=category_id, type_id=type_id,
-                                                                           OperationType=ExpenseType,
+                                                                           OperationType=ComingType,
                                                                            action=RenameTypeCallback.__prefix__))
 
     message = await query.message.answer(text=f'Переименуйте тип "{type_name}" \nв категории "{category_name}":')
 
     await state.update_data(query_message=query_message_id, category_id=category_id, type_id=type_id,
                             type_name=type_name, category_name=category_name, sent_message=message.message_id)
-    await state.set_state(RenameExpenseTypeCallback.new_type_name)
+    await state.set_state(RenameComingTypeCallback.new_type_name)
 
 
-@renameTypeRouter.callback_query(RenameExpenseTypeCallback.new_type_name,
+@renameTypeRouter.callback_query(RenameComingTypeCallback.new_type_name,
                                  CancelTypeRenameCallback.filter((F.cancel == True)))
 async def cancel_rename_type(query: CallbackQuery, state: FSMContext):
     await query.answer()
@@ -60,14 +60,14 @@ async def cancel_rename_type(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType))
+    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ComingType))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
 
 renameTypeRouter.message.middleware(LimitTypeLenMiddleware())
 
 
-@renameTypeRouter.message(RenameExpenseTypeCallback.new_type_name, flags={"limit_len": True})
+@renameTypeRouter.message(RenameComingTypeCallback.new_type_name, flags={"limit_len": True})
 async def rename_type(message: Message, state: FSMContext):
     chat_id = message.chat.id
 
@@ -89,13 +89,13 @@ async def rename_type(message: Message, state: FSMContext):
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
     try:
-        ExpenseType.rename_type(type_id, new_type_name)
+        ComingType.rename_type(type_id, new_type_name)
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите тип для изменения \nв категории: "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id, ExpenseType, ExpenseCategory)))
+                                  reply_markup=create_type_choose_kb(category_id, ComingType, ComingCategory)))
     except IntegrityError:
         await message.answer(text=f'Тип "{new_type_name}" уже есть в категории "{category_name}"')
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите действие по изменению типа'
                                        f'"{type_name}" в категории "{category_name}":',
-                                  reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType)))
+                                  reply_markup=create_edit_type_kb(category_id, type_id, ComingType)))

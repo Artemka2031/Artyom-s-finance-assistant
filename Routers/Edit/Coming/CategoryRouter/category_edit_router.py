@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from magic_filter import F
 
-from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
+from Database.Tables.ComingTables import ComingType, ComingCategory
 from Keyboards.Edit.category import ChooseCategoryEditCallback
 from Keyboards.Edit.type import create_type_choose_kb
 from .Category_routers import deleteCategoryRouter, newCategoryRouter, renameCategoryRouter
@@ -10,7 +10,7 @@ from .Category_routers import deleteCategoryRouter, newCategoryRouter, renameCat
 categoryEditRouter = Router()
 
 
-@categoryEditRouter.callback_query(ChooseCategoryEditCallback.filter(F.operation == "expense"),
+@categoryEditRouter.callback_query(ChooseCategoryEditCallback.filter(F.operation == "coming"),
                                    flags={"delete_sent_message": True})
 async def edit_category_callback(query: CallbackQuery, callback_data: ChooseCategoryEditCallback):
     await query.answer()
@@ -19,8 +19,8 @@ async def edit_category_callback(query: CallbackQuery, callback_data: ChooseCate
     category_name = callback_data.category_name
 
     await query.message.edit_text(text=f'Выберите тип для изменения \nв категории "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id, OperationType=ExpenseType,
-                                                                     OperationCategory=ExpenseCategory))
+                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ComingType,
+                                                                     OperationCategory=ComingCategory))
 
 
 # Добавляем роутер по изменению имени категории

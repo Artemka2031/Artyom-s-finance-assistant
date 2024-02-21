@@ -4,10 +4,12 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from Database.Tables.ExpensesTables import ExpenseCategory
+from Database.Tables.ComingTables import ComingCategory
 
 
 class TodayCallback(CallbackData, prefix="TDC"):
     today: str
+
 
 
 class ChooseCategoryCallback(CallbackData, prefix="CCC"):
@@ -15,10 +17,10 @@ class ChooseCategoryCallback(CallbackData, prefix="CCC"):
     category_name: str
 
 
-def category_choose_kb():
+def category_choose_kb(OperationCategory: ExpenseCategory | ComingCategory):
     choose_category_b = InlineKeyboardBuilder()
 
-    categories = ExpenseCategory.get_all()
+    categories = OperationCategory.get_all()
 
     for category_dic in categories:
         category_id = int(category_dic["id"])

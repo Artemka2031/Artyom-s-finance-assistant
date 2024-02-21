@@ -19,11 +19,9 @@ class ComingCategory(BaseCategory):
         """
         try:
             # Находим и удаляем все типы приходов, связанные с этой категорией
-            types_in_category = ComingType.select().where(ComingType.category_id == category_id)
+            types_in_category = ComingType.select().where(ComingType.category == category_id)
             for coming_type in types_in_category:
-                # Если есть необходимость, здесь можно добавить дополнительные действия,
-                # например, удаление или обновление связанных приходов
-                coming_type.delete_instance()
+                ComingType.delete_type(coming_type.id)
 
             # Удаляем саму категорию
             category = cls.get_by_id(category_id)
