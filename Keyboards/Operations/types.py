@@ -2,6 +2,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from Database.Tables.ComingTables import ComingType
 from Database.Tables.ExpensesTables import ExpenseType
 
 
@@ -16,10 +17,14 @@ class BackToCategoriesCallback(CallbackData, prefix="BCC"):
     back: bool
 
 
-def create_type_kb(category_id):
+class ExpemseType:
+    pass
+
+
+def create_type_kb(category_id, OperationType: ComingType | ExpemseType):
     choose_type_b = InlineKeyboardBuilder()
 
-    category_types = ExpenseType.get_all_types(category_id)
+    category_types = OperationType.get_all_types(category_id)
 
     for type_dic in category_types:
         category_id = int(type_dic["category_id"])

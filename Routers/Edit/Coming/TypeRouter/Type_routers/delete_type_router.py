@@ -3,14 +3,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery
 
-from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
+from Database.Tables.ComingTables import ComingType, ComingCategory
 from Keyboards.Edit.type import DeleteTypeCallback, CancelTypeDeleteCallback, create_edit_type_kb, create_type_choose_kb
 
 deleteTypeRouter = Router()
 
 
 # Удаление типа
-class DeleteExpenseTypeState(StatesGroup):
+class DeleteComingTypeState(StatesGroup):
     query_message = State()
     category_id = State()
     type_id = State()
@@ -19,11 +19,11 @@ class DeleteExpenseTypeState(StatesGroup):
     confirm = State()
 
 
-@deleteTypeRouter.callback_query(DeleteTypeCallback.filter(F.operation == "expense"))
+@deleteTypeRouter.callback_query(DeleteTypeCallback.filter(F.operation == "coming"))
 async def delete_type_action(query: CallbackQuery, callback_data: DeleteTypeCallback, state: FSMContext):
     await query.answer()
 
-    await state.set_state(DeleteExpenseTypeState.query_message)
+    await state.set_state(DeleteComingTypeState.query_message)
 
     query_message_id = query.message.message_id
     category_id = callback_data.category_id
@@ -32,15 +32,15 @@ async def delete_type_action(query: CallbackQuery, callback_data: DeleteTypeCall
     category_name = callback_data.category_name
 
     await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id=category_id, type_id=type_id,
-                                                                           OperationType=ExpenseType,
+                                                                           OperationType=ComingType,
                                                                            action=DeleteTypeCallback.__prefix__))
 
     await state.update_data(query_message=query_message_id, category_id=category_id, type_id=type_id,
                             type_name=type_name, category_name=category_name)
-    await state.set_state(DeleteExpenseTypeState.confirm)
+    await state.set_state(DeleteComingTypeState.confirm)
 
 
-@deleteTypeRouter.callback_query(DeleteExpenseTypeState.confirm,
+@deleteTypeRouter.callback_query(DeleteComingTypeState.confirm,
                                  CancelTypeDeleteCallback.filter(F.cancel_delete == True))
 async def cancel_delete_type_action(query: CallbackQuery, state: FSMContext):
     await query.answer()
@@ -51,10 +51,10 @@ async def cancel_delete_type_action(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType))
+    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ComingType))
 
 
-@deleteTypeRouter.callback_query(DeleteExpenseTypeState.confirm,
+@deleteTypeRouter.callback_query(DeleteComingTypeState.confirm,
                                  CancelTypeDeleteCallback.filter(F.cancel_delete == False))
 async def delete_type(query: CallbackQuery, state: FSMContext):
     data = (await state.get_data())
@@ -65,8 +65,8 @@ async def delete_type(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    ExpenseType.delete_type(type_id)
+    ComingType.delete_type(type_id)
     await query.answer(text=f'Тип "{type_name}" был удалён из категории "{category_name}"')
     await query.message.edit_text(text=f'Выберите тип для изменения в категории "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
-                                                                     OperationCategory=ExpenseCategory))
+                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ComingType,
+                                                                     OperationCategory=ComingCategory))

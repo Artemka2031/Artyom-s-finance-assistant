@@ -3,15 +3,15 @@ from aiogram.fsm.context import FSMContext
 from aiogram.methods import DeleteMessage
 from aiogram.types import Message, CallbackQuery
 
-from Database.Tables.ExpensesTables import Expense as ExpenseDB
+from Database.Tables.ComingTables import Coming as ComingDB
 from Keyboards.Operations.delete import create_delete_operation_kb, DeleteOperation, ConfirmDeleteOperation
-from Routers.AddExpense.expense_state_class import Expense
+from Routers.AddComing.coming_state_class import Coming
 from create_bot import bot
 
 commentRouter = Router()
 
 
-@commentRouter.message(Expense.comment)
+@commentRouter.message(Coming.comment)
 async def set_comment(message: Message, state: FSMContext):
     await message.delete()
     chat_id = message.chat.id
@@ -25,8 +25,8 @@ async def set_comment(message: Message, state: FSMContext):
     type_name = data["type"]["type_name"]
     amount = data["amount"]
 
-    expense = ExpenseDB.add(date, category_id, type_id, amount, comment)
-    expense_id = expense.id
+    coming = ComingDB.add(date, category_id, type_id, amount, comment)
+    coming_id = coming.id
 
     messages_ids = [data["date_message_id"], data["category_message_id"],
                     data["amount_message_id"], data["comment_message_id"]]
@@ -39,41 +39,46 @@ async def set_comment(message: Message, state: FSMContext):
     except:
         pass
 
-    await message.answer(text=f"<b>✨ Добавлен расход</b>\n"
-                              f"Дата: <code>{date}</code>\n"
-                              f"Тип: <code>{type_name}</code>\n"
-                              f"Категория: <code>{category_name}</code>\n"
-                              f"Сумма: <code>{amount}</code>\n"
-                              f"Комментарий: <code>{comment}</code>\n",
-                         reply_markup=create_delete_operation_kb(operation_id=expense_id, confirm=False))
+    await message.answer(
+        text=(
+            f"<b>📥 Новый приход</b>\n\n"
+            f"🗓 <b>Дата:</b> <code>{date}</code>\n"
+            f"🔖 <b>Тип:</b> <code>{type_name}</code>\n"
+            f"📁 <b>Категория:</b> <code>{category_name}</code>\n"
+            f"💵 <b>Сумма:</b> <code>{amount}</code> руб.\n"
+            f"💬 <b>Комментарий:</b> <code>{comment if comment else 'Нет'}</code>\n"
+        ),
+        reply_markup=create_delete_operation_kb(operation_id=coming_id, confirm=False),
+        parse_mode='HTML'
+    )
 
 
 @commentRouter.callback_query(DeleteOperation.filter(F.delete == True))
-async def confirm_delete_expense(query: CallbackQuery, callback_data: DeleteOperation):
+async def confirm_delete_coming(query: CallbackQuery, callback_data: DeleteOperation):
     await query.answer()
-    expense_id = callback_data.operation_id
-    await query.message.edit_reply_markup(reply_markup=create_delete_operation_kb(expense_id, True))
+    coming_id = callback_data.operation_id
+    await query.message.edit_reply_markup(reply_markup=create_delete_operation_kb(coming_id, True))
 
 
 @commentRouter.callback_query(ConfirmDeleteOperation.filter(F.confirm_delete == True))
-async def delete_expense(query: CallbackQuery, callback_data: DeleteOperation):
+async def delete_coming(query: CallbackQuery, callback_data: DeleteOperation):
     await query.answer()
 
     message_text = query.message.text
-    expense_id = callback_data.operation_id
+    coming_id = callback_data.operation_id
 
     try:
-        ExpenseDB.remove(expense_id)
+        ComingDB.remove(coming_id)
         await query.message.edit_text(text="<b>***Удалено***</b>\n" + message_text, reply_markup=None)
-    except ExpenseDB.DoesNotExist:
+    except ComingDB.DoesNotExist:
         await query.message.answer(text="Расход не найден")
     except:
         await query.message.answer(text=f"Неизвестная ошибка")
 
 
 @commentRouter.callback_query(ConfirmDeleteOperation.filter(F.confirm_delete == False))
-async def cancel_delete_expense(query: CallbackQuery, callback_data: ConfirmDeleteOperation):
+async def cancel_delete_coming(query: CallbackQuery, callback_data: ConfirmDeleteOperation):
     await query.answer()
 
-    expense_id = callback_data.operation_id
-    await query.message.edit_reply_markup(reply_markup=create_delete_operation_kb(operation_id=expense_id, confirm=False))
+    coming_id = callback_data.operation_id
+    await query.message.edit_reply_markup(reply_markup=create_delete_operation_kb(operation_id=coming_id, confirm=False))

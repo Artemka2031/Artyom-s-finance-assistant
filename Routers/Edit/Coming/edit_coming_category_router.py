@@ -3,27 +3,27 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from Database.Tables.ExpensesTables import ExpenseCategory
+from Database.Tables.ComingTables import ComingCategory
 from Keyboards.Edit.category import create_category_choose_kb
 from Middlewares.Edit.ClearStateMiddleware import ClearStateMiddleware
 from commands import bot_commands
 from .CategoryRouter import categoryEditRouter
 from .TypeRouter import typeEditRouter
 
-editExpenseCategoriesRouter = Router()
+editComingCategoriesRouter = Router()
 
 
 # Методы для запуска работы с редактором категорий и типов
-@editExpenseCategoriesRouter.message(Command(bot_commands.edit_expenses))
-@editExpenseCategoriesRouter.message(F.text.casefold() == "редактирование категорий")
+@editComingCategoriesRouter.message(Command(bot_commands.edit_comings))
+@editComingCategoriesRouter.message(F.text.casefold() == "редактирование категорий")
 async def start_messaging(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(text="Выберите категорию для изменения",
-                         reply_markup=create_category_choose_kb(OperationCategory=ExpenseCategory,
+                         reply_markup=create_category_choose_kb(OperationCategory=ComingCategory,
                                                                 category_create=True))
 
 
-editExpenseCategoriesRouter.callback_query.middleware(ClearStateMiddleware())
+editComingCategoriesRouter.callback_query.middleware(ClearStateMiddleware())
 
-editExpenseCategoriesRouter.include_router(categoryEditRouter)
-editExpenseCategoriesRouter.include_router(typeEditRouter)
+editComingCategoriesRouter.include_router(categoryEditRouter)
+editComingCategoriesRouter.include_router(typeEditRouter)

@@ -1,6 +1,6 @@
 import logging
 
-from peewee import SqliteDatabase, CharField, Model, IntegrityError, ForeignKeyField, DateField
+from peewee import SqliteDatabase, CharField, Model, IntegrityError, DateField
 
 from Path import dbPath
 
@@ -163,12 +163,16 @@ class BaseType(Model):
         try:
             category = CategoryModel.get(CategoryModel.id == category_id)
             new_type = cls.create(name=type_name, category=category)
-            # Логирование и дальнейшие действия...
+            cls.logger.info(f"New type '{new_type.name}' added to category '{category.name}' successfully.")
         except CategoryModel.DoesNotExist:
-            # Обработка случая, когда категория не найдена
+            cls.logger.error(f"Category with ID {category_id} not found.")
+            pass
+        except IntegrityError:
+            cls.logger.error(f"Type '{type_name}' already exists in category '{category.name}'.")
+            raise IntegrityError(f"Type '{type_name}' already exists in category '{category.name}'.")
             pass
         except Exception as e:
-            # Обработка других исключений
+            cls.logger.error(f"Error adding type: {e}")
             pass
 
     @classmethod
@@ -258,6 +262,9 @@ class BaseType(Model):
             cls.logger.info(f"Type name changed from '{old_name}' to '{new_name}'.")
         except cls.DoesNotExist:
             cls.logger.warning(f"Type with ID {type_id} not found.")
+        except IntegrityError:
+            cls.logger.warning(f"Type name '{new_name}' already exists in the same category.")
+            raise IntegrityError(f"Type name '{new_name}' already exists in the same category.")
         except Exception as e:
             cls.logger.error(f"Error renaming type: {e}")
 
@@ -295,7 +302,8 @@ class BaseOperations(Model):
             category = CategoryModel.get_by_id(category_id)
             operation_type = TypeModel.get_by_id(type_id)
             operation = cls.create(date=date, category=category, type=operation_type, amount=amount, comment=comment)
-            cls.logger.info("New operation added successfully.")
+            cls.logger.info(
+                f"New operation added successfully in type '{operation_type.name}' of category '{category.name}'.")
             return operation
         except IntegrityError as e:
             cls.logger.error(f"Failed to add new operation: {e}")
