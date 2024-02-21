@@ -25,7 +25,8 @@ async def new_category_callback(query: CallbackQuery, state: FSMContext):
     await query.answer()
     await state.set_state(NewCategory.query_message)
 
-    await query.message.edit_reply_markup(reply_markup=create_category_choose_kb(category_create=False))
+    await query.message.edit_reply_markup(
+        reply_markup=create_category_choose_kb(OperationCategory=ExpenseCategory, category_create=False))
 
     query_message_id = query.message.message_id
     await state.set_state(NewCategory.query_message)
@@ -47,7 +48,8 @@ async def cancel_new_category_callback(query: CallbackQuery, state: FSMContext):
     await state.clear()
 
     await query.message.edit_text(text="Выберите категория для изменения:",
-                                  reply_markup=create_category_choose_kb(category_create=True))
+                                  reply_markup=create_category_choose_kb(OperationCategory=ExpenseCategory,
+                                                                         category_create=True))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
 
@@ -75,6 +77,6 @@ async def add_new_category(message: Message, state: FSMContext):
 
     await bot(EditMessageReplyMarkup(chat_id=chat_id,
                                      message_id=query_message_id,
-                                     reply_markup=create_category_choose_kb()))
+                                     reply_markup=create_category_choose_kb(ExpenseCategory)))
     await bot(DeleteMessage(chat_id=chat_id, message_id=message_id))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message_id))

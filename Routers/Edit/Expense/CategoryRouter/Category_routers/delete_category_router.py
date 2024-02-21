@@ -28,8 +28,10 @@ async def delete_category_action(query: CallbackQuery, callback_data: DeleteCate
     category_id = callback_data.category_id
     category_name = callback_data.category_name
 
-    await query.message.edit_reply_markup(reply_markup=create_type_choose_kb(category_id=category_id,
-                                                                             delete_category=True))
+    await query.message.edit_reply_markup(
+        reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseCategory,
+                                           OperationCategory=ExpenseCategory,
+                                           delete_category=True))
 
     await state.update_data(query_message=query_message_id, category_id=category_id, category_name=category_name)
     await state.set_state(DeleteCategory.confirm)
@@ -60,4 +62,4 @@ async def delete_category(query: CallbackQuery, state: FSMContext):
     ExpenseCategory.delete_category(category_id=category_id)
     await query.answer(text=f'Категория "{category_name}" была удалён')
     await query.message.edit_text(text=f'Выберите категорию для изменения":',
-                                  reply_markup=create_category_choose_kb())
+                                  reply_markup=create_category_choose_kb(ExpenseCategory))

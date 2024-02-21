@@ -159,7 +159,7 @@ class BaseType(Model):
     def add_type(cls, type_name, category_id):
         # Теперь правильно используем category_class для доступа к классу категории
         CategoryModel = cls.category_class.fget(None)  # Получаем класс модели категории
-        print(CategoryModel)
+
         try:
             category = CategoryModel.get(CategoryModel.id == category_id)
             new_type = cls.create(name=type_name, category=category)
@@ -205,16 +205,18 @@ class BaseType(Model):
         """
         try:
             types = cls.select().where(cls.category_id == category_id)
-            return [{"type_id": type_.id, "type_name": type_.name} for type_ in types]
+            return [{"category_id": type_.category_id, "category_name": type_.category.name, "type_id": type_.id,
+                     "type_name": type_.name} for type_ in types]
         except Exception as e:
             cls.logger.error(f"Error retrieving types: {e}")
             return []
 
     @classmethod
     def get_type(cls, category_id: int, type_id):
+        CategoryModel = cls.category_class.fget(None)
         try:
             # Поиск исходной категории
-            category = cls.get_category_class().get(cls.get_category_class().id == category_id)
+            category = CategoryModel.get(CategoryModel.id == category_id)
 
             # Поиск конкретного типа в данной категории
             expense_type = cls.get((cls.id == type_id) & (cls.category == category))
@@ -228,7 +230,7 @@ class BaseType(Model):
         except cls.DoesNotExist:
             cls.logger.warning(f"Ошибка: Тип с ID {type_id} не найден в данной категории.")
             return None
-        except cls.get_category_class().DoesNotExist:
+        except CategoryModel.DoesNotExist:
             cls.logger.warning(f"Ошибка: Категория с ID {category_id} не найдена.")
             return None
         except Exception as e:
@@ -265,34 +267,33 @@ class BaseOperations(Model):
     Abstract base class for financial operations such as expenses and incomes.
     """
     date = DateField()
-    # ForeignKeyField должен быть переопределен в подклассах для указания конкретных моделей категории и типа
-    # category = ForeignKeyField(null=True)
-    # type = ForeignKeyField(null=True)
     amount = CharField()
     comment = CharField()
 
-    # Логгер для регистрации событий, связанных с операциями
-    logger = initialize_logger("BaseOperations")
+    logger = initialize_logger("BaseOperationsLogger")
 
     class Meta:
         database = db
         abstract = True
 
     @classmethod
+    def category_class(cls):
+        raise NotImplementedError("Subclasses must implement a class method returning the associated category class.")
+
+    @classmethod
+    def type_class(cls):
+        raise NotImplementedError("Subclasses must implement a class method returning the associated type class.")
+
+    @classmethod
     def add(cls, date, category_id, type_id, amount, comment):
         """
         Adds a new financial operation to the database.
-
-        :param date: The date of the operation.
-        :param category_id: The ID of the category associated with the operation.
-        :param type_id: The ID of the type associated with the operation.
-        :param amount: The amount of money involved in the operation.
-        :param comment: Additional comments about the operation.
-        :return: The instance of the newly created operation.
         """
+        CategoryModel = cls.category_class()
+        TypeModel = cls.type_class()
         try:
-            category = cls.category.get_by_id(category_id)
-            operation_type = cls.type.get_by_id(type_id)
+            category = CategoryModel.get_by_id(category_id)
+            operation_type = TypeModel.get_by_id(type_id)
             operation = cls.create(date=date, category=category, type=operation_type, amount=amount, comment=comment)
             cls.logger.info("New operation added successfully.")
             return operation
@@ -304,8 +305,6 @@ class BaseOperations(Model):
     def remove(cls, operation_id):
         """
         Removes a financial operation from the database by its ID.
-
-        :param operation_id: The ID of the operation to remove.
         """
         try:
             operation = cls.get_by_id(operation_id)
@@ -319,16 +318,14 @@ class BaseOperations(Model):
     def get_all(cls):
         """
         Retrieves all financial operations from the database.
-
-        :return: A list of dictionaries, each representing an operation.
         """
         try:
             operations = cls.select()
             return [{
                 "id": operation.id,
-                "date": operation.date,
-                "category": operation.category.name if operation.category else "N/A",
-                "type": operation.type.name if operation.type else "N/A",
+                "date": operation.date.strftime("%Y-%m-%d"),
+                "category_id": operation.category.id if operation.category else None,
+                "type_id": operation.type.id if operation.type else None,
                 "amount": operation.amount,
                 "comment": operation.comment
             } for operation in operations]
@@ -340,18 +337,14 @@ class BaseOperations(Model):
     def get_by_time_interval(cls, start_date, end_date):
         """
         Retrieves financial operations within a specific time interval.
-
-        :param start_date: The start date of the interval.
-        :param end_date: The end date of the interval.
-        :return: A list of dictionaries, each representing an operation within the interval.
         """
         try:
-            operations = cls.select().where((cls.date >= start_date) & (cls.date <= end_date))
+            operations = cls.select().where(cls.date.between(start_date, end_date))
             return [{
                 "id": operation.id,
-                "date": operation.date,
-                "category": operation.category.name if operation.category else "N/A",
-                "type": operation.type.name if operation.type else "N/A",
+                "date": operation.date.strftime("%Y-%m-%d"),
+                "category_id": operation.category.id if operation.category else None,
+                "type_id": operation.type.id if operation.type else None,
                 "amount": operation.amount,
                 "comment": operation.comment
             } for operation in operations]

@@ -79,3 +79,18 @@ class Coming(BaseOperations):
 
     class Meta:
         db_table = 'comings'
+
+    @classmethod
+    def category_class(cls):
+        """
+        Returns the ComingCategory class associated with ComingOperation.
+        """
+        return ComingCategory
+
+    @classmethod
+    def type_class(cls):
+        """
+        Returns the ComingType class associated with ComingOperation.
+        """
+        return ComingType
+

@@ -5,7 +5,7 @@ from aiogram.methods import DeleteMessage, EditMessageText
 from aiogram.types import CallbackQuery, Message
 from peewee import IntegrityError
 
-from Database.Tables.ExpensesTables import ExpenseCategory
+from Database.Tables.ExpensesTables import ExpenseCategory, ExpenseType
 from Keyboards.Edit.type import RenameCategoryCallback, CancelCategoryRenameCallback, create_type_choose_kb
 from Middlewares.Edit.MessageLen import LimitCategoryLenMiddleware
 from create_bot import bot
@@ -33,7 +33,7 @@ async def rename_category_action(query: CallbackQuery, callback_data: RenameCate
     category_name = callback_data.category_name
 
     await query.message.edit_reply_markup(reply_markup=create_type_choose_kb(
-        category_id=category_id,
+        category_id=category_id, OperationType=ExpenseType, OperationCategory=ExpenseCategory,
         rename_category=True))
 
     message = await query.message.answer(text=f'Переименуйте категорию "{category_name}":')
@@ -55,7 +55,9 @@ async def cancel_rename_category(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    await query.message.edit_reply_markup(reply_markup=create_type_choose_kb(category_id))
+    await query.message.edit_reply_markup(
+        reply_markup=create_type_choose_kb(category_id, OperationType=ExpenseType, OperationCategory=ExpenseCategory,
+                                           rename_category=False))
     await bot(DeleteMessage(chat_id=chat_id, message_id=sent_message))
 
 
@@ -85,9 +87,13 @@ async def rename_category(message: Message, state: FSMContext):
         ExpenseCategory.change_category_name(category_id, new_category_name)
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите тип для изменения \nв категории: "{new_category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id=category_id)))
+                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
+                                                                     OperationCategory=ExpenseCategory,
+                                                                     rename_category=False)))
     except IntegrityError:
         await message.answer(text=f'Тип "{new_category_name}" уже есть в бахе данных')
         await bot(EditMessageText(chat_id=chat_id, message_id=query_message,
                                   text=f'Выберите тип для изменения \nв категории: "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id=category_id)))
+                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
+                                                                     OperationCategory=ExpenseCategory,
+                                                                     rename_category=True)))

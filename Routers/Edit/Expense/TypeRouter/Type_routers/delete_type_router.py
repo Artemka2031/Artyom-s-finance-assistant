@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery
 
-from Database.Tables.ExpensesTables import ExpenseType
+from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
 from Keyboards.Edit.type import DeleteTypeCallback, CancelTypeDeleteCallback, create_edit_type_kb, create_type_choose_kb
 
 deleteTypeRouter = Router()
@@ -32,6 +32,7 @@ async def delete_type_action(query: CallbackQuery, callback_data: DeleteTypeCall
     category_name = callback_data.category_name
 
     await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id=category_id, type_id=type_id,
+                                                                           OperationType=ExpenseType,
                                                                            action=DeleteTypeCallback.__prefix__))
 
     await state.update_data(query_message=query_message_id, category_id=category_id, type_id=type_id,
@@ -50,7 +51,7 @@ async def cancel_delete_type_action(query: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
-    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id))
+    await query.message.edit_reply_markup(reply_markup=create_edit_type_kb(category_id, type_id, ExpenseType))
 
 
 @deleteTypeRouter.callback_query(DeleteType.confirm,
@@ -67,4 +68,5 @@ async def delete_type(query: CallbackQuery, state: FSMContext):
     ExpenseType.delete_type(type_id)
     await query.answer(text=f'Тип "{type_name}" был удалён из категории "{category_name}"')
     await query.message.edit_text(text=f'Выберите тип для изменения в категории "{category_name}":',
-                                  reply_markup=create_type_choose_kb(category_id=category_id))
+                                  reply_markup=create_type_choose_kb(category_id=category_id, OperationType=ExpenseType,
+                                                                     OperationCategory=ExpenseCategory))

@@ -3,6 +3,7 @@ from aiogram.types import inline_keyboard_button as ik
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from Database.Tables.ExpensesTables import ExpenseType, ExpenseCategory
+from Database.Tables.ComingTables import ComingType, ComingCategory
 
 
 class BaseTypeCallbackData(CallbackData, prefix="Base T Callback"):
@@ -46,14 +47,16 @@ class CancelCategoryDeleteCallback(CallbackData, prefix="Cancel Delete C"):
     cancel_delete_category: bool
 
 
-def create_type_choose_kb(category_id: int, create: bool = True,
-                          rename_category: bool = False, delete_category: bool = False):
+def create_type_choose_kb(category_id: int, OperationType: ExpenseType | ComingType,
+                          OperationCategory: ExpenseCategory | ComingCategory,
+                          create: bool = True, rename_category: bool = False, delete_category: bool = False):
     chooseTypeB = InlineKeyboardBuilder()
 
-    types = ExpenseType.get_all_types(category_id)
-    category_name = ExpenseCategory.get_name_by_id(category_id)
+    types = OperationType.get_all_types(category_id)
+    category_name = OperationCategory.get_name_by_id(category_id)
 
     for type_dic in types:
+        print(type_dic)
         category_id = int(type_dic["category_id"])
         category_name = type_dic["category_name"]
 
@@ -138,8 +141,8 @@ class MoveTypeCallback(BaseTypeCallbackData, prefix="Move type", ):
     pass
 
 
-def create_edit_type_kb(category_id: int, type_id: int, action: str = "Default"):
-    type_expense = ExpenseType.get_type(category_id, type_id)
+def create_edit_type_kb(category_id: int, type_id: int, OperationType, action: str = "Default"):
+    type_expense = OperationType.get_type(category_id, type_id)
 
     category_id = int(type_expense["category_id"])
     category_name = type_expense["category_name"]
