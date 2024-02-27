@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from peewee import ForeignKeyField
 
 from Database.db_base import BaseCategory, BaseType, BaseOperations, initialize_logger
@@ -92,3 +94,30 @@ class Coming(BaseOperations):
         """
         return ComingType
 
+    @classmethod
+    def get_all(cls):
+        """
+        Retrieves all coming financial operations from the database, including category and type names.
+        """
+        try:
+            operations_query = (cls
+                                .select(cls, ComingCategory.name.alias('category_name'),
+                                        ComingType.name.alias('type_name'))
+                                .join(ComingCategory, on=(cls.category == ComingCategory.id).alias('category'))
+                                .switch(cls)
+                                .join(ComingType, on=(cls.type == ComingType.id).alias('type'))
+                                .dicts())
+
+            operations = list(operations_query)
+            return [{
+                "id": operation['id'],
+                "date": datetime.strptime(operation['date'], "%d.%m.%y").strftime("%d.%m.%y") if isinstance(
+                    operation['date'], str) else operation['date'],
+                "category_name": operation['category_name'],
+                "type_name": operation['type_name'],
+                "amount": operation['amount'],
+                "comment": operation['comment']
+            } for operation in operations]
+        except Exception as e:
+            cls.logger.error(f"Failed to retrieve comings: {e}")
+            return []

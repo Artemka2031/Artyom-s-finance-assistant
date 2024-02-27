@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from peewee import ForeignKeyField
 
 from Database.db_base import BaseCategory, BaseType, BaseOperations, initialize_logger
@@ -7,7 +9,6 @@ class ExpenseCategory(BaseCategory):
     """
     Represents a category of expenses.
     """
-
     logger = initialize_logger(f"ExpenseCategory")
 
     @classmethod
@@ -93,3 +94,33 @@ class Expense(BaseOperations):
         Returns the ExpenseType class associated with ExpenseOperation.
         """
         return ExpenseType
+
+    @classmethod
+    def get_all(cls):
+        """
+        Retrieves all financial operations from the database, including category and type names.
+        """
+        try:
+            operations_query = (cls
+                                .select(cls, ExpenseCategory.name.alias('category_name'),
+                                        ExpenseType.name.alias('type_name'))
+                                .join(ExpenseCategory, on=(cls.category == ExpenseCategory.id).alias('category'))
+                                .switch(cls)  # Возвращаемся к изначальной модели для следующего соединения
+                                .join(ExpenseType, on=(cls.type == ExpenseType.id).alias('type'))
+                                .dicts())
+
+            operations = list(operations_query)
+            # Преобразование данных в список словарей с необходимой информацией
+            return [{
+                "id": operation['id'],
+                # Используем правильный формат для преобразования строки в дату
+                "date": datetime.strptime(operation['date'], "%d.%m.%y").strftime("%d.%m.%y") if isinstance(
+                    operation['date'], str) else operation['date'],
+                "category_name": operation['category_name'],
+                "type_name": operation['type_name'],
+                "amount": operation['amount'],
+                "comment": operation['comment']
+            } for operation in operations]
+        except Exception as e:
+            cls.logger.error(f"Failed to retrieve operations: {e}")
+            return []
